@@ -11,6 +11,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -43,23 +45,42 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun CompassScreen(state: CompassUiState) {
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF000000))
             .systemBarsPadding(),
-        contentAlignment = Alignment.Center
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        when (state) {
-            is CompassUiState.NoSensor -> {
-                NoSensorStateView()
+        // Main Utility Workspace (Takes remaining height, never clipped by ads)
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
+            contentAlignment = Alignment.Center
+        ) {
+            when (state) {
+                is CompassUiState.NoSensor -> NoSensorStateView()
+                is CompassUiState.Content -> ContentStateView(state)
+                is CompassUiState.Settings -> Unit
             }
-            is CompassUiState.Content -> {
-                ContentStateView(state)
-            }
-            is CompassUiState.Settings -> {
-                // Handled in sub-sheet
-            }
+        }
+
+        // Bottom Ad Banner Inset Zone (Guarantees banner never covers the dial)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp)
+                .background(Color(0xFF0D0D0E)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "AD BANNER CONTAINER",
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Medium,
+                letterSpacing = 1.5.sp,
+                color = Color(0xFF3A3A3C)
+            )
         }
     }
 }
@@ -76,29 +97,30 @@ fun ContentStateView(state: CompassUiState.Content) {
 
     val accentColor by animateColorAsState(
         targetValue = if (state.isLevel) Color(0xFF34C759) else Color.White,
-        animationSpec = tween(durationMillis = 200),
+        animationSpec = tween(durationMillis = 180),
         label = "levelAccent"
     )
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 24.dp, vertical = 32.dp),
+            .padding(horizontal = 24.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
+        // Top Heading Readout
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             if (state.isCompassAvailable) {
                 Text(
                     text = "${state.headingDegrees.roundToInt()}°",
-                    fontSize = 72.sp,
+                    fontSize = 68.sp,
                     fontWeight = FontWeight.Light,
                     color = Color.White,
                     letterSpacing = (-2).sp
                 )
                 Text(
                     text = getCardinalDirection(state.headingDegrees),
-                    fontSize = 18.sp,
+                    fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = Color(0xFF8E8E93),
                     letterSpacing = 2.sp
@@ -106,7 +128,7 @@ fun ContentStateView(state: CompassUiState.Content) {
             } else {
                 Text(
                     text = if (state.isLevel) "0°" else "${maxOf(abs(state.pitchDegrees), abs(state.rollDegrees)).roundToInt()}°",
-                    fontSize = 72.sp,
+                    fontSize = 68.sp,
                     fontWeight = FontWeight.Light,
                     color = accentColor,
                     letterSpacing = (-2).sp
@@ -119,10 +141,29 @@ fun ContentStateView(state: CompassUiState.Content) {
                     letterSpacing = 3.sp
                 )
             }
+
+            // Unreliable Accuracy / Calibration Warning Tag
+            if (state.isUnreliable) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = Color(0x33FF9F0A)
+                ) {
+                    Text(
+                        text = "CALIBRATION NEEDED (TILT IN FIGURE 8)",
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFFF9F0A),
+                        letterSpacing = 1.sp,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                    )
+                }
+            }
         }
 
+        // Center Dual Compass & Level Reticle
         Box(
-            modifier = Modifier.size(280.dp),
+            modifier = Modifier.size(260.dp),
             contentAlignment = Alignment.Center
         ) {
             Canvas(modifier = Modifier.fillMaxSize()) {
@@ -133,7 +174,7 @@ fun ContentStateView(state: CompassUiState.Content) {
                     rotate(-state.headingDegrees, pivot = center) {
                         for (i in 0 until 360 step 30) {
                             val isCardinal = i % 90 == 0
-                            val tickLength = if (isCardinal) 16.dp.toPx() else 8.dp.toPx()
+                            val tickLength = if (isCardinal) 14.dp.toPx() else 7.dp.toPx()
                             val tickColor = if (i == 0) Color(0xFFFF3B30) else if (isCardinal) Color.White else Color(0xFF3A3A3C)
                             val stroke = if (isCardinal) 2.dp.toPx() else 1.dp.toPx()
 
@@ -156,6 +197,7 @@ fun ContentStateView(state: CompassUiState.Content) {
                     )
                 }
 
+                // Level boundary rings
                 drawCircle(
                     color = Color(0xFF1C1C1E),
                     radius = radius * 0.45f,
@@ -172,6 +214,7 @@ fun ContentStateView(state: CompassUiState.Content) {
                     center = center
                 )
 
+                // Spirit level bubble
                 drawCircle(
                     color = accentColor,
                     radius = 16.dp.toPx(),
@@ -181,10 +224,11 @@ fun ContentStateView(state: CompassUiState.Content) {
             }
         }
 
+        // Bottom Metrics: Monospace Pitch and Roll
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 16.dp),
+                .padding(bottom = 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             MinimalMetric(label = "PITCH", value = "${state.pitchDegrees.roundToInt()}°")
@@ -198,15 +242,15 @@ fun MinimalMetric(label: String, value: String) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = label,
-            fontSize = 12.sp,
+            fontSize = 11.sp,
             fontWeight = FontWeight.Medium,
             color = Color(0xFF636366),
             letterSpacing = 1.5.sp
         )
-        Spacer(modifier = Modifier.height(4.dp))
+        Spacer(modifier = Modifier.height(2.dp))
         Text(
             text = value,
-            fontSize = 24.sp,
+            fontSize = 22.sp,
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Light,
             color = Color.White
@@ -230,10 +274,10 @@ fun NoSensorStateView() {
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Neither orientation nor accelerometer hardware was detected.",
-            fontSize = 14.sp,
+            text = "Orientation and accelerometer sensors are not available on this device.",
+            fontSize = 13.sp,
             color = Color(0xFF8E8E93),
-            lineHeight = 20.sp
+            lineHeight = 18.sp
         )
     }
 }
