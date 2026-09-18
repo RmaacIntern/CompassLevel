@@ -7,12 +7,15 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -20,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.platform.LocalView
@@ -38,21 +42,38 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val state by viewModel.uiState.collectAsState()
-            CompassScreen(state = state)
+            CompassScreen(
+                state = state,
+                onCalibrate = { viewModel.calibrateZero() },
+                onResetCalibration = { viewModel.resetCalibration() }
+            )
         }
     }
 }
 
 @Composable
-fun CompassScreen(state: CompassUiState) {
+fun CompassScreen(
+    state: CompassUiState,
+    onCalibrate: () -> Unit,
+    onResetCalibration: () -> Unit
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFF000000))
-            .systemBarsPadding(),
+            .systemBarsPadding()
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null
+            ) {
+                if (state is CompassUiState.Content) {
+                    if (state.isCalibrated) onResetCalibration() else onCalibrate()
+                }
+            },
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Main Utility Workspace (Takes remaining height, never clipped by ads)
         Box(
             modifier = Modifier
                 .weight(1f)
@@ -66,20 +87,20 @@ fun CompassScreen(state: CompassUiState) {
             }
         }
 
-        // Bottom Ad Banner Inset Zone (Guarantees banner never covers the dial)
+        // Bottom Ad Banner Safe Container (Never overlaps gauge)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp)
-                .background(Color(0xFF0D0D0E)),
+                .height(50.dp)
+                .background(Color(0xFF080808)),
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "AD BANNER CONTAINER",
+                text = "AD BANNER",
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Medium,
-                letterSpacing = 1.5.sp,
-                color = Color(0xFF3A3A3C)
+                letterSpacing = 2.sp,
+                color = Color(0xFF2C2C2E)
             )
         }
     }
@@ -89,168 +110,206 @@ fun CompassScreen(state: CompassUiState) {
 fun ContentStateView(state: CompassUiState.Content) {
     val view = LocalView.current
 
+    // Haptic feedback on snap
     LaunchedEffect(state.isLevel) {
         if (state.isLevel) {
             view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
         }
     }
 
-    val accentColor by animateColorAsState(
-        targetValue = if (state.isLevel) Color(0xFF34C759) else Color.White,
-        animationSpec = tween(durationMillis = 180),
-        label = "levelAccent"
+    // Hardware-accelerated smooth spring animations
+    val animatedPitch by animateFloatAsState(
+        targetValue = state.pitchDegrees,
+        animationSpec = spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioNoBouncy),
+        label = "pitchAnim"
     )
+    val animatedRoll by animateFloatAsState(
+        targetValue = state.rollDegrees,
+        animationSpec = spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioNoBouncy),
+        label = "rollAnim"
+    )
+    val animatedHeading by animateFloatAsState(
+        targetValue = state.headingDegrees,
+        animationSpec = spring(stiffness = Spring.StiffnessLow, dampingRatio = Spring.DampingRatioNoBouncy),
+        label = "headingAnim"
+    )
+
+    val levelColor by animateColorAsState(
+        targetValue = if (state.isLevel) Color(0xFF34C759) else Color.White,
+        animationSpec = tween(durationMillis = 150),
+        label = "colorAnim"
+    )
+
+    val deviationAngle = maxOf(abs(animatedPitch), abs(animatedRoll)).roundToInt()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 24.dp, vertical = 16.dp),
+            .padding(horizontal = 24.dp, vertical = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // Top Heading Readout
+        // Top Apple Typography Readout
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             if (state.isCompassAvailable) {
                 Text(
-                    text = "${state.headingDegrees.roundToInt()}°",
-                    fontSize = 68.sp,
-                    fontWeight = FontWeight.Light,
+                    text = "${animatedHeading.roundToInt()}°",
+                    fontSize = 80.sp,
+                    fontWeight = FontWeight.ExtraLight,
                     color = Color.White,
-                    letterSpacing = (-2).sp
+                    letterSpacing = (-3).sp
                 )
                 Text(
-                    text = getCardinalDirection(state.headingDegrees),
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
+                    text = getCardinalDirection(animatedHeading),
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Medium,
                     color = Color(0xFF8E8E93),
-                    letterSpacing = 2.sp
+                    letterSpacing = 3.sp
                 )
             } else {
                 Text(
-                    text = if (state.isLevel) "0°" else "${maxOf(abs(state.pitchDegrees), abs(state.rollDegrees)).roundToInt()}°",
-                    fontSize = 68.sp,
-                    fontWeight = FontWeight.Light,
-                    color = accentColor,
-                    letterSpacing = (-2).sp
+                    text = "${deviationAngle}°",
+                    fontSize = 80.sp,
+                    fontWeight = FontWeight.ExtraLight,
+                    color = levelColor,
+                    letterSpacing = (-3).sp
                 )
                 Text(
-                    text = if (state.isLevel) "LEVEL" else "TILT",
-                    fontSize = 16.sp,
+                    text = if (state.isLevel) "LEVEL" else if (state.isCalibrated) "CALIBRATED ZERO" else "TAP TO ZERO",
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = if (state.isLevel) Color(0xFF34C759) else Color(0xFF8E8E93),
-                    letterSpacing = 3.sp
+                    letterSpacing = 2.5.sp
                 )
-            }
-
-            // Unreliable Accuracy / Calibration Warning Tag
-            if (state.isUnreliable) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color(0x33FF9F0A)
-                ) {
-                    Text(
-                        text = "CALIBRATION NEEDED (TILT IN FIGURE 8)",
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFFFF9F0A),
-                        letterSpacing = 1.sp,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                    )
-                }
             }
         }
 
-        // Center Dual Compass & Level Reticle
+        // Center Apple Dual Bubble & Compass Rose
         Box(
-            modifier = Modifier.size(260.dp),
+            modifier = Modifier.size(290.dp),
             contentAlignment = Alignment.Center
         ) {
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val center = this.center
                 val radius = size.minDimension / 2f
 
+                // Outer Compass Rose ticks
                 if (state.isCompassAvailable) {
-                    rotate(-state.headingDegrees, pivot = center) {
-                        for (i in 0 until 360 step 30) {
-                            val isCardinal = i % 90 == 0
-                            val tickLength = if (isCardinal) 14.dp.toPx() else 7.dp.toPx()
-                            val tickColor = if (i == 0) Color(0xFFFF3B30) else if (isCardinal) Color.White else Color(0xFF3A3A3C)
-                            val stroke = if (isCardinal) 2.dp.toPx() else 1.dp.toPx()
-
-                            rotate(i.toFloat(), pivot = center) {
-                                drawLine(
-                                    color = tickColor,
-                                    start = Offset(center.x, center.y - radius),
-                                    end = Offset(center.x, center.y - radius + tickLength),
-                                    strokeWidth = stroke,
-                                    cap = StrokeCap.Round
-                                )
-                            }
-                        }
+                    rotate(-animatedHeading, pivot = center) {
+                        drawCompassRose(center, radius)
                     }
                 } else {
                     drawCircle(
-                        color = Color(0xFF2C2C2E),
+                        color = Color(0xFF1C1C1E),
                         radius = radius,
                         style = Stroke(width = 1.dp.toPx())
                     )
                 }
 
-                // Level boundary rings
-                drawCircle(
-                    color = Color(0xFF1C1C1E),
-                    radius = radius * 0.45f,
-                    style = Stroke(width = 1.dp.toPx())
+                // Apple-style Level Discs
+                val maxTravel = radius * 0.55f
+                val bubbleOffsetX = (animatedRoll / 30f).coerceIn(-1f, 1f) * maxTravel
+                val bubbleOffsetY = (animatedPitch / 30f).coerceIn(-1f, 1f) * maxTravel
+                val bubbleRadius = 42.dp.toPx()
+
+                if (state.isLevel) {
+                    // Merged solid green disk on true level
+                    drawCircle(
+                        color = Color(0xFF34C759),
+                        radius = bubbleRadius,
+                        center = center
+                    )
+                } else {
+                    // Fixed central target circle
+                    drawCircle(
+                        color = Color.White,
+                        radius = bubbleRadius,
+                        center = center,
+                        style = Stroke(width = 1.25.dp.toPx())
+                    )
+
+                    // Moving spirit bubble
+                    drawCircle(
+                        color = Color(0xFF1C1C1E),
+                        radius = bubbleRadius - 1.dp.toPx(),
+                        center = Offset(center.x + bubbleOffsetX, center.y + bubbleOffsetY)
+                    )
+                    drawCircle(
+                        color = Color.White.copy(alpha = 0.85f),
+                        radius = bubbleRadius,
+                        center = Offset(center.x + bubbleOffsetX, center.y + bubbleOffsetY),
+                        style = Stroke(width = 1.25.dp.toPx())
+                    )
+                    // Inner dot
+                    drawCircle(
+                        color = Color.White,
+                        radius = 2.dp.toPx(),
+                        center = Offset(center.x + bubbleOffsetX, center.y + bubbleOffsetY)
+                    )
+                }
+
+                // Precision crosshairs
+                drawLine(
+                    color = Color(0xFF2C2C2E),
+                    start = Offset(center.x - 12.dp.toPx(), center.y),
+                    end = Offset(center.x + 12.dp.toPx(), center.y),
+                    strokeWidth = 1.dp.toPx()
                 )
-
-                val maxOffset = radius * 0.40f
-                val offsetX = (state.rollDegrees / 45f).coerceIn(-1f, 1f) * maxOffset
-                val offsetY = (state.pitchDegrees / 45f).coerceIn(-1f, 1f) * maxOffset
-
-                drawCircle(
-                    color = accentColor.copy(alpha = 0.3f),
-                    radius = 8.dp.toPx(),
-                    center = center
-                )
-
-                // Spirit level bubble
-                drawCircle(
-                    color = accentColor,
-                    radius = 16.dp.toPx(),
-                    center = Offset(center.x + offsetX, center.y + offsetY),
-                    style = Stroke(width = 2.dp.toPx())
+                drawLine(
+                    color = Color(0xFF2C2C2E),
+                    start = Offset(center.x, center.y - 12.dp.toPx()),
+                    end = Offset(center.x, center.y + 12.dp.toPx()),
+                    strokeWidth = 1.dp.toPx()
                 )
             }
         }
 
-        // Bottom Metrics: Monospace Pitch and Roll
+        // Bottom Metrics: Pitch & Roll Readout
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 8.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
+                .padding(horizontal = 24.dp, bottom = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            MinimalMetric(label = "PITCH", value = "${state.pitchDegrees.roundToInt()}°")
-            MinimalMetric(label = "ROLL", value = "${state.rollDegrees.roundToInt()}°")
+            MetricPill(label = "PITCH", degrees = animatedPitch.roundToInt())
+            MetricPill(label = "ROLL", degrees = animatedRoll.roundToInt())
+        }
+    }
+}
+
+private fun DrawScope.drawCompassRose(center: Offset, radius: Float) {
+    for (i in 0 until 360 step 30) {
+        val isCardinal = i % 90 == 0
+        val tickLength = if (isCardinal) 18.dp.toPx() else 8.dp.toPx()
+        val tickColor = if (i == 0) Color(0xFFFF3B30) else if (isCardinal) Color.White else Color(0xFF3A3A3C)
+        val stroke = if (isCardinal) 2.dp.toPx() else 1.dp.toPx()
+
+        rotate(i.toFloat(), pivot = center) {
+            drawLine(
+                color = tickColor,
+                start = Offset(center.x, center.y - radius),
+                end = Offset(center.x, center.y - radius + tickLength),
+                strokeWidth = stroke,
+                cap = StrokeCap.Round
+            )
         }
     }
 }
 
 @Composable
-fun MinimalMetric(label: String, value: String) {
+fun MetricPill(label: String, degrees: Int) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = label,
             fontSize = 11.sp,
-            fontWeight = FontWeight.Medium,
+            fontWeight = FontWeight.SemiBold,
             color = Color(0xFF636366),
-            letterSpacing = 1.5.sp
+            letterSpacing = 2.sp
         )
         Spacer(modifier = Modifier.height(2.dp))
         Text(
-            text = value,
-            fontSize = 22.sp,
+            text = "${degrees}°",
+            fontSize = 24.sp,
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Light,
             color = Color.White
@@ -274,7 +333,7 @@ fun NoSensorStateView() {
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Orientation and accelerometer sensors are not available on this device.",
+            text = "Neither orientation nor accelerometer sensors are available on this device.",
             fontSize = 13.sp,
             color = Color(0xFF8E8E93),
             lineHeight = 18.sp

@@ -19,7 +19,8 @@ data class SensorSnapshot(
     val isLevel: Boolean,
     val accuracy: Int,
     val isCompassAvailable: Boolean,
-    val isUnreliable: Boolean
+    val isUnreliable: Boolean,
+    val isCalibrated: Boolean
 )
 
 class SensorDataManager(context: Context) {
@@ -28,17 +29,34 @@ class SensorDataManager(context: Context) {
     private val accelSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
     private val magSensor = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
 
+    private var pitchOffset = 0f
+    private var rollOffset = 0f
+    private var isCalibrated = false
+
+    private var rawSmoothedPitch = 0f
+    private var rawSmoothedRoll = 0f
+
     val hasRequiredSensors: Boolean
         get() = rotationSensor != null || accelSensor != null
 
     val hasCompass: Boolean
         get() = rotationSensor != null || (accelSensor != null && magSensor != null)
 
+    fun calibrateZero() {
+        pitchOffset = rawSmoothedPitch
+        rollOffset = rawSmoothedRoll
+        isCalibrated = true
+    }
+
+    fun resetCalibration() {
+        pitchOffset = 0f
+        rollOffset = 0f
+        isCalibrated = false
+    }
+
     fun getSensorStream(): Flow<SensorSnapshot> = callbackFlow {
         var lastGoodHeading = 0f
         var currentSmoothedHeading = 0f
-        var smoothedPitch = 0f
-        var smoothedRoll = 0f
 
         val rotationMatrix = FloatArray(9)
         val orientationAngles = FloatArray(3)
@@ -61,7 +79,6 @@ class SensorDataManager(context: Context) {
                     hasAccel = true
 
                     if (magSensor == null) {
-                        // Accelerometer-only trigonometry fallback for Level
                         val ax = accelReading[0].toDouble()
                         val ay = accelReading[1].toDouble()
                         val az = accelReading[2].toDouble()
@@ -95,11 +112,9 @@ class SensorDataManager(context: Context) {
                 val rawPitch = Math.toDegrees(angles[1].toDouble()).toFloat()
                 val rawRoll = Math.toDegrees(angles[2].toDouble()).toFloat()
 
-                // If sensor becomes UNRELIABLE, hold the last good heading to prevent erratic wild spinning
                 val targetHeading = if (isUnreliable) lastGoodHeading else rawAzimuth
 
-                // Low-pass filter (0.12f smoothing factor for stable readout)
-                val alpha = 0.12f
+                val alpha = 0.08f
                 currentSmoothedHeading += alpha * shortestAngleDiff(targetHeading, currentSmoothedHeading)
                 currentSmoothedHeading = (currentSmoothedHeading + 360f) % 360f
 
@@ -107,40 +122,46 @@ class SensorDataManager(context: Context) {
                     lastGoodHeading = currentSmoothedHeading
                 }
 
-                smoothedPitch += alpha * (rawPitch - smoothedPitch)
-                smoothedRoll += alpha * (rawRoll - smoothedRoll)
+                rawSmoothedPitch += alpha * (rawPitch - rawSmoothedPitch)
+                rawSmoothedRoll += alpha * (rawRoll - rawSmoothedRoll)
 
-                val isLevel = abs(smoothedPitch) <= 0.5f && abs(smoothedRoll) <= 0.5f
+                val calibratedPitch = rawSmoothedPitch - pitchOffset
+                val calibratedRoll = rawSmoothedRoll - rollOffset
+                val isLevel = abs(calibratedPitch) <= 0.5f && abs(calibratedRoll) <= 0.5f
 
                 trySend(
                     SensorSnapshot(
                         heading = currentSmoothedHeading,
-                        pitch = smoothedPitch,
-                        roll = smoothedRoll,
+                        pitch = calibratedPitch,
+                        roll = calibratedRoll,
                         isLevel = isLevel,
                         accuracy = accuracy,
                         isCompassAvailable = hasCompassHardware,
-                        isUnreliable = isUnreliable
+                        isUnreliable = isUnreliable,
+                        isCalibrated = isCalibrated
                     )
                 )
             }
 
             private fun processLevelOnly(rawPitch: Float, rawRoll: Float, accuracy: Int) {
-                val alpha = 0.15f
-                smoothedPitch += alpha * (rawPitch - smoothedPitch)
-                smoothedRoll += alpha * (rawRoll - smoothedRoll)
+                val alpha = 0.09f
+                rawSmoothedPitch += alpha * (rawPitch - rawSmoothedPitch)
+                rawSmoothedRoll += alpha * (rawRoll - rawSmoothedRoll)
 
-                val isLevel = abs(smoothedPitch) <= 0.5f && abs(smoothedRoll) <= 0.5f
+                val calibratedPitch = rawSmoothedPitch - pitchOffset
+                val calibratedRoll = rawSmoothedRoll - rollOffset
+                val isLevel = abs(calibratedPitch) <= 0.5f && abs(calibratedRoll) <= 0.5f
 
                 trySend(
                     SensorSnapshot(
                         heading = 0f,
-                        pitch = smoothedPitch,
-                        roll = smoothedRoll,
+                        pitch = calibratedPitch,
+                        roll = calibratedRoll,
                         isLevel = isLevel,
                         accuracy = accuracy,
                         isCompassAvailable = false,
-                        isUnreliable = false
+                        isUnreliable = false,
+                        isCalibrated = isCalibrated
                     )
                 )
             }
@@ -149,10 +170,10 @@ class SensorDataManager(context: Context) {
         }
 
         if (rotationSensor != null) {
-            sensorManager.registerListener(listener, rotationSensor, SensorManager.SENSOR_DELAY_UI)
+            sensorManager.registerListener(listener, rotationSensor, SensorManager.SENSOR_DELAY_FASTEST)
         } else {
-            accelSensor?.let { sensorManager.registerListener(listener, it, SensorManager.SENSOR_DELAY_UI) }
-            magSensor?.let { sensorManager.registerListener(listener, it, SensorManager.SENSOR_DELAY_UI) }
+            accelSensor?.let { sensorManager.registerListener(listener, it, SensorManager.SENSOR_DELAY_FASTEST) }
+            magSensor?.let { sensorManager.registerListener(listener, it, SensorManager.SENSOR_DELAY_FASTEST) }
         }
 
         awaitClose {
