@@ -1,31 +1,41 @@
-# Specification — App A: Compass & Level
+# SPEC: Compass & Level (App A)
 
-**App ID:** `com.aivigil.compasslevel`  
-**Target SDK:** 36 | **Compile SDK:** 37 | **Min SDK:** 24  
-**Date:** 2026-09-18  
+## 1. Product Summary
+A minimalist, Apple-inspired utility providing a magnetic compass dial and dual-axis spirit bubble level on a unified obsidian screen. Target: Android 7.0+ (API 24+).
 
-## 1. Problem Statement & Functional Goals
-Deliver a low-latency, battery-conscious utility providing dual real-time physical measurements:
-- **Magnetic Heading (Azimuth):** Real-time degree heading (0°–359°) with cardinal/intercardinal direction markers.
-- **Surface Level (Tilt & Roll):** 2D bubble level and numeric degrees of inclination on Pitch (X) and Roll (Y) axes.
+---
 
-## 2. Hardware Sensor Contracts
-- **Primary Source:** `Sensor.TYPE_ROTATION_VECTOR` (fused sensor).
-- **Fallback Source:** `Sensor.TYPE_ACCELEROMETER` paired with `Sensor.TYPE_MAGNETIC_FIELD` (processed via `SensorManager.getRotationMatrix` and `SensorManager.getOrientation`).
-- **Sampling Rate:** `SensorManager.SENSOR_DELAY_UI` (balances 60fps UI fluidity with battery conservation).
-- **Lifecycle Management:** Unregister listeners inside `onPause`/`DisposableEffect` to guarantee 0% background sensor power drain.
+## 2. Features We Are Building
+- **Unified Compass & Spirit Level Screen:**
+  - Real-time heading display with cardinal direction subtitles.
+  - Concentric dual-disc spirit level with visual snap and haptic feedback at ±0.5°.
+  - Fallback level-only mode for devices lacking a magnetometer.
+- **Sensor Engine & Signal Conditioning:**
+  - Fast-polling sensor stream with exponential moving average (EMA) smoothing ($\alpha = 0.08$).
+  - Shortest-angular-delta wrapping to eliminate 359°–0° snap jitter.
+  - "Heading Hold" buffer: Dial freezes at last known good heading when accuracy drops to `UNRELIABLE`.
+  - Tap-to-tare surface zeroing to counter camera bump elevation.
+- **Monetization Isolation:**
+  - Bottom-anchored 50dp ad container isolated from the dial layout via strict vertical constraints.
+  - One rewarded video placement for sensor calibration instructions.
+  - Zero interstitial advertisements.
+- **Settings Screen (Day 2):**
+  - Magnetic vs. True North toggle (manual declination input).
+  - Angle units toggle (degrees vs. percentage grade).
+  - Sensor health diagnostic & calibration guide dialog.
 
-## 3. Scope Boundaries: What We Are NOT Building This Week
+---
 
-| Feature | Exclusion Rationale |
-| :--- | :--- |
-| **True North (GPS/Declination)** | Requires runtime location permissions (`ACCESS_FINE_LOCATION`), GPS power draw, and geoid lookups. Out of scope for a pure hardware sensor utility. |
-| **Camera Viewfinder / AR Mode** | Adds unnecessary camera hardware access, complexity, and battery drain. |
-| **Map Overlays / Tile Integration** | Demands external SDKs (Google Maps/Mapbox) and network overhead. |
-| **Cloud Telemetry / Remote Sync** | Violates offline-first architectural purity. |
-| **Complex Haptic Polyphony** | Level alignment uses standard system tick feedback only. |
+## 3. What We Are NOT Building
+- **Zero GPS / Location Permissions:** No GPS, fine/coarse location APIs, or runtime permission requests.
+- **Zero Network Dependency:** No servers, analytics pings, or database sync. The core utility is strictly offline.
+- **No Mapping / Camera AR:** No Google Maps SDK, Mapbox, or camera preview layers.
+- **No Degree Accuracy Claims:** Never claim laboratory or absolute degree-level accuracy; standard consumer MEMS sensors exhibit ±1°–2° drift.
+
+---
 
 ## 4. Acceptance Criteria
-1. Compass displays continuous, filtered heading with smooth low-pass interpolation.
-2. Level indicators show Pitch and Roll deviation ±0.5° accuracy against flat surface testing.
-3. App transitions automatically across all 4 lifecycle and sensor availability states.
+- [x] Stable compass orientation without needle flicker.
+- [x] Dual-axis spirit level smoothly tracks tilt and snaps green at ±0.5°.
+- [x] Level-only fallback functions gracefully when magnetometer hardware is absent.
+- [x] Ad container never overlaps, crowds, or clips the dial viewport.
