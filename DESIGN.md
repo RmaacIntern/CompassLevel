@@ -1,36 +1,28 @@
-# Design System & State Architecture — Compass & Level
+# DESIGN: Compass & Level (App A)
+**Design Gate:** Gate 1B (Screen States & Layout Specifications)
 
-## 1. Architectural Pattern
-- **Pattern:** Unidirectional Data Flow (UDF) via Clean Architecture.
-- **State Container:** `CompassLevelViewModel` exposing an immutable `StateFlow<CompassUiState>`.
-- **UI Engine:** Jetpack Compose Material 3 with canvas-based pointer rendering.
+## Visual Board (Gate 1B)
+![All 4 Screen States](docs/gate-1b-screens.png)
 
-## 2. The 4 Mandatory Screen States
+---
 
-### State 1: Content State (Normal Operation)
-- **Condition:** All required sensors detected; accuracy is `SENSOR_STATUS_ACCURACY_MEDIUM` or `HIGH`.
-- **UI Elements:**
-- Dual gauge display: Circular compass rose (top) and 2D circular spirit bubble (center).
-- Digital numeric readouts: Heading degree (°), Pitch (°), Roll (°).
-- Visual snap indication: Bubble turns accent green with a subtle system haptic tick when within ±0.5° level.
+## 1. Design Tokens & Palette
 
-### State 2: Sensor Unreliable State
-- **Condition:** Sensor accuracy drops to `SENSOR_STATUS_UNRELIABLE` or `SENSOR_STATUS_ACCURACY_LOW`.
-- **UI Elements:**
-- Content remains visible but dimmed.
-- Floating non-blocking banner/card: "Compass calibration required".
-- Animated Figure-8 calibration diagram illustrating device rotation motion.
+| Token | Hex Value | Purpose |
+| :--- | :--- | :--- |
+| `Background` | `#000000` | Obsidian dark canvas, true OLED black |
+| `SurfaceElevated` | `#0D0D0E` | Bottom ad banner reservation container |
+| `TextPrimary` | `#FFFFFF` | Primary heading/degree readouts |
+| `TextSecondary` | `#8E8E93` | Cardinal direction, subheaders, status tags |
+| `TextMuted` | `#636366` | Pitch/Roll labels, boundary crosshairs |
+| `AccentGreen` | `#34C759` | Level snap at ±0.5°, haptic feedback trigger |
+| `AccentAmber` | `#FF9F0A` | Unreliable magnetic sensor warning pill |
+| `AccentRed` | `#FF3B30` | North index pointer, fatal error indicator |
 
-### State 3: No Sensor State
-- **Condition:** `SensorManager.getDefaultSensor()` returns `null` for both `TYPE_ROTATION_VECTOR` and `TYPE_MAGNETIC_FIELD`.
-- **UI Elements:**
-- Full-screen friendly error illustration with a clean icon.
-- Message: "Magnetic hardware unavailable on this device."
-- Fallback level-only mode toggle (if accelerometer is present).
+---
 
-### State 4: Settings State
-- **Condition:** User accesses the settings sheet/route.
-- **UI Elements:**
-- Damping filter coefficient slider (Low-pass smoothing vs. immediate responsiveness).
-- Haptic toggle (Enable/disable level snap vibration).
-- Angle unit selector (Degrees vs. Percentage slope).
+## 2. Documented Screen States
+1. **Screen 1 (Loading State):** Minimalist center loading indicator (`INITIALIZING SENSORS`) while registering hardware sensors.
+2. **Screen 2 (Content State):** Full rotating compass rose with real-time degrees (`324° NW`), spirit level snap ring, and monospace pitch/roll metric pills.
+3. **Screen 3 (Fallback Level-Only State):** Graceful fallback for devices lacking a magnetometer (`R8VY4007A1P`). Dial hidden, reticle active, and `TAP TO ZERO` tare interaction prominent.
+4. **Screen 4 (Error / Sensor Unreliable):** Heading lock indicator, amber `CALIBRATION NEEDED` pill, and figure-8 motion instructions to resolve magnetic distortion.
