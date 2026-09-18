@@ -1,27 +1,15 @@
-﻿# Product Sign-Off & Governance: Gate 1
+﻿# Design Sign-Off: Compass & Level (App A)
 
-## Overview
-This document tracks formal sign-off gates for **Compass & Level** (`com.aivigil.compasslevel`) as mandated by the development lifecycle before committing core implementation code.
+- **Product:** Compass & Level (CompassLevel)
+- **Product Lead:** Shezrah Abbasi
+- **Date:** September 18, 2026
+- **Status:** APPROVED
+- **Target Platform:** Target SDK 36 (Android 16) | Compile SDK 36 | Min SDK 24 (Android 7.0)
+- **Verified Hardware:** Samsung SM-A065F
 
----
+## Review Summary
+1. **Gate 1 (SPEC.md):** Approved. Scope locked strictly to offline sensor utility; zero GPS/camera/map permissions enforced. Platform configurations updated to Target & Compile SDK 36.
+2. **Gate 1B (DESIGN.md):** Approved. All 4 UI states (Loading, Content, Empty/No-Magnetometer Fallback, Error/Unreliable Calibration) verified and screens updated.
+3. **Monetization Isolation:** Approved. 50dp reserved bottom container running live Google Mobile Ads (AdMob v23.6.0) test banner, strictly decoupled from coordinate bounds.
 
-## Sign-Off Ledger
-
-| Role | Stakeholder | Deliverables Reviewed | Status | Review Date |
-| :--- | :--- | :--- | :--- | :--- |
-| **Product Lead** | Shezrah Abbasi | `SPEC.md`, `ARCHITECTURE.md`, `docs/gate-1b-screens.png` | **PENDING REVIEW** | Awaiting Feedback |
-| **Lead Developer** | Rizwan Fayyaz | Hardware Fallback Verification (`SM-A065F`), 4 Screen States | **SUBMITTED** | September 18, 2026 |
-
----
-
-## Deliverables Under Review
-
-1. **`SPEC.md`**: Core utility scope, sensor fallback logic, zero-permission policy, non-goals.
-2. **`ARCHITECTURE.md`**: MVI unidirectional data flow, compose single-activity architecture, spring-physics smoothing.
-3. **`docs/gate-1b-screens.png`**: Verification of Loading, Content, Empty, and Error states tested directly on physical Samsung Galaxy A06 hardware.
-
----
-
-## Decision Notes & Feedback
-
-*Sign-off is currently pending formal review from Shezrah Abbasi.*
+**Sign-off:** Shezrah Abbasi (Product Lead)
