@@ -1,4 +1,4 @@
-package com.aivigil.day0check
+ï»¿package com.aivigil.day0check
 
 import android.os.Bundle
 import android.view.HapticFeedbackConstants
@@ -31,6 +31,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.*
 
+enum class DemoState { LIVE, LOADING, CONTENT, EMPTY, ERROR }
+
+@OptIn(ExperimentalMaterial3Api::class)
 class MainActivity : ComponentActivity() {
     private val viewModel: CompassViewModel by viewModels()
 
@@ -38,25 +41,141 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             val uiState by viewModel.uiState.collectAsState()
+            var demoOverride by remember { mutableStateOf(DemoState.LIVE) }
+
             CompassTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = Color(0xFF000000)
                 ) {
-                    CompassScreen(
-                        uiState = uiState,
-                        onTareClick = {
-                            val current = uiState
-                            if (current is CompassUiState.Content && current.isCalibrated) {
-                                viewModel.resetCalibration()
-                            } else {
-                                viewModel.calibrateZero()
+                    Scaffold(
+                        containerColor = Color(0xFF000000),
+                        topBar = {
+                            Column {
+                                TopAppBar(
+                                    title = {
+                                        Text(
+                                            text = "Compass & Level",
+                                            fontSize = 18.sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = Color(0xFFFFFFFF)
+                                        )
+                                    },
+                                    actions = {
+                                        IconButton(onClick = { /* Day 2 Settings */ }) {
+                                            Canvas(modifier = Modifier.size(24.dp)) {
+                                                val cx = size.width / 2f
+                                                val cy = size.height / 2f
+                                                val r = 1.5.dp.toPx()
+                                                val dotColor = Color(0xFF8E8E93)
+                                                drawCircle(dotColor, r, Offset(cx, cy - 6.dp.toPx()))
+                                                drawCircle(dotColor, r, Offset(cx, cy))
+                                                drawCircle(dotColor, r, Offset(cx, cy + 6.dp.toPx()))
+                                            }
+                                        }
+                                    },
+                                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF000000))
+                                )
+                                // Scannable compact state strip
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(Color(0xFF0D0D0E))
+                                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    DemoTab("Live", demoOverride == DemoState.LIVE) { demoOverride = DemoState.LIVE }
+                                    DemoTab("Loading", demoOverride == DemoState.LOADING) { demoOverride = DemoState.LOADING }
+                                    DemoTab("Content", demoOverride == DemoState.CONTENT) { demoOverride = DemoState.CONTENT }
+                                    DemoTab("Empty", demoOverride == DemoState.EMPTY) { demoOverride = DemoState.EMPTY }
+                                    DemoTab("Error", demoOverride == DemoState.ERROR) { demoOverride = DemoState.ERROR }
+                                }
+                            }
+                        },
+                        bottomBar = {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(50.dp)
+                                    .background(Color(0xFF0D0D0E))
+                                    .border(1.dp, Color(0xFF1C1C1E)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "- ADVERTISEMENT - 320x50",
+                                    fontSize = 11.sp,
+                                    fontFamily = FontFamily.Monospace,
+                                    color = Color(0xFF636366),
+                                    letterSpacing = 1.5.sp
+                                )
                             }
                         }
-                    )
+                    ) { innerPadding ->
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(innerPadding)
+                        ) {
+                            when (demoOverride) {
+                                DemoState.LOADING -> LoadingView()
+                                DemoState.EMPTY -> EmptyStateView()
+                                DemoState.ERROR -> ErrorStateView()
+                                DemoState.CONTENT -> {
+                                    // Mocked 324 NW Compass Content state as shown in design board
+                                    val view = LocalView.current
+                                    ContentView(
+                                        state = CompassUiState.Content(
+                                            headingDegrees = 324f,
+                                            pitchDegrees = 1f,
+                                            rollDegrees = 0f,
+                                            isLevel = false,
+                                            isCompassAvailable = true
+                                        ),
+                                        onTareClick = { view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP) }
+                                    )
+                                }
+                                DemoState.LIVE -> {
+                                    when (uiState) {
+                                        is CompassUiState.Content -> {
+                                            val view = LocalView.current
+                                            ContentView(
+                                                state = uiState as CompassUiState.Content,
+                                                onTareClick = {
+                                                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                                                    val c = uiState as CompassUiState.Content
+                                                    if (c.isCalibrated) viewModel.resetCalibration() else viewModel.calibrateZero()
+                                                }
+                                            )
+                                        }
+                                        is CompassUiState.NoSensor -> ErrorStateView()
+                                        is CompassUiState.Settings -> Unit
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
+    }
+}
+
+@Composable
+fun DemoTab(label: String, isSelected: Boolean, onClick: () -> Unit) {
+    Surface(
+        shape = RoundedCornerShape(6.dp),
+        color = if (isSelected) Color(0xFF1C3A27) else Color.Transparent,
+        modifier = Modifier.clickable(onClick = onClick)
+    ) {
+        Text(
+            text = label,
+            fontSize = 11.sp,
+            fontFamily = FontFamily.Monospace,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+            color = if (isSelected) Color(0xFF34C759) else Color(0xFF8E8E93),
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+        )
     }
 }
 
@@ -73,85 +192,111 @@ fun CompassTheme(content: @Composable () -> Unit) {
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CompassScreen(
-    uiState: CompassUiState,
-    onTareClick: () -> Unit
-) {
-    Scaffold(
-        containerColor = Color(0xFF000000),
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "Compass & Level",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFFFFFFFF)
-                    )
-                },
-                actions = {
-                    IconButton(onClick = { /* Day 2 Settings route */ }) {
-                        Canvas(modifier = Modifier.size(24.dp)) {
-                            val cx = size.width / 2f
-                            val cy = size.height / 2f
-                            val r = 1.5.dp.toPx()
-                            val dotColor = Color(0xFF8E8E93)
-                            drawCircle(dotColor, r, Offset(cx, cy - 6.dp.toPx()))
-                            drawCircle(dotColor, r, Offset(cx, cy))
-                            drawCircle(dotColor, r, Offset(cx, cy + 6.dp.toPx()))
-                        }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFF000000)
-                )
-            )
-        },
-        bottomBar = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-                    .background(Color(0xFF0D0D0E))
-                    .border(1.dp, Color(0xFF1C1C1E)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "• ADVERTISEMENT • 320x50",
-                    fontSize = 11.sp,
-                    fontFamily = FontFamily.Monospace,
-                    color = Color(0xFF636366),
-                    letterSpacing = 1.5.sp
-                )
-            }
-        }
-    ) { innerPadding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
+fun LoadingView() {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        CircularProgressIndicator(
+            color = Color(0xFF34C759),
+            strokeWidth = 2.5.dp,
+            modifier = Modifier.size(54.dp)
+        )
+        Spacer(modifier = Modifier.height(24.dp))
+        Text(
+            text = "INITIALIZING SENSORS",
+            fontFamily = FontFamily.Monospace,
+            fontSize = 12.sp,
+            color = Color(0xFF8E8E93),
+            letterSpacing = 2.sp
+        )
+    }
+}
+
+@Composable
+fun EmptyStateView() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = Color(0xFF141416),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF2C2C2E)),
+            modifier = Modifier.size(80.dp)
         ) {
-            when (uiState) {
-                is CompassUiState.Content -> {
-                    val view = LocalView.current
-                    ContentView(
-                        state = uiState,
-                        onTareClick = {
-                            view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
-                            onTareClick()
-                        }
-                    )
-                }
-                is CompassUiState.NoSensor -> {
-                    NoSensorFallbackView()
-                }
-                is CompassUiState.Settings -> {
-                    // Settings stub
-                }
+            Box(contentAlignment = Alignment.Center) {
+                Text(
+                    text = "N/A",
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 22.sp,
+                    color = Color(0xFF636366)
+                )
             }
         }
+        Spacer(modifier = Modifier.height(20.dp))
+        Text(
+            text = "NO SENSOR ACTIVITY",
+            fontFamily = FontFamily.Monospace,
+            fontWeight = FontWeight.Bold,
+            fontSize = 14.sp,
+            color = Color(0xFFFFFFFF),
+            letterSpacing = 1.sp
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Device sensors are idle or waiting for motion input.",
+            fontSize = 13.sp,
+            color = Color(0xFF8E8E93),
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
+    }
+}
+
+@Composable
+fun ErrorStateView() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = Color(0xFF2C1E0A),
+            border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFF9F0A))
+        ) {
+            Text(
+                text = "! CALIBRATION NEEDED",
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                color = Color(0xFFFF9F0A),
+                fontSize = 12.sp,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold
+            )
+        }
+        Spacer(modifier = Modifier.height(24.dp))
+        Text(
+            text = "MAGNETIC INTERFERENCE DETECTED",
+            fontFamily = FontFamily.Monospace,
+            fontWeight = FontWeight.SemiBold,
+            fontSize = 13.sp,
+            color = Color(0xFFFFFFFF)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Wave phone in a figure-8 pattern to recalibrate the sensor compass.",
+            fontSize = 12.sp,
+            color = Color(0xFF8E8E93),
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+        )
     }
 }
 
@@ -186,21 +331,20 @@ fun ContentView(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // Degree & Cardinal Direction Readout
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.padding(top = 16.dp)
         ) {
+            val degSymbol = "\u00B0"
             if (state.isCompassAvailable) {
                 Text(
-                    text = "${animatedHeading.roundToInt()}°",
+                    text = "${animatedHeading.roundToInt()}$degSymbol",
                     fontSize = 72.sp,
                     fontWeight = FontWeight.ExtraLight,
                     color = Color.White
                 )
-                val cardinal = getCardinalDirection(animatedHeading)
                 Text(
-                    text = cardinal,
+                    text = getCardinalDirection(animatedHeading),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Normal,
                     color = Color(0xFF8E8E93),
@@ -209,7 +353,7 @@ fun ContentView(
             } else {
                 val totalTilt = sqrt(state.pitchDegrees * state.pitchDegrees + state.rollDegrees * state.rollDegrees)
                 Text(
-                    text = "${totalTilt.roundToInt()}°",
+                    text = "${totalTilt.roundToInt()}$degSymbol",
                     fontSize = 72.sp,
                     fontWeight = FontWeight.ExtraLight,
                     color = Color.White
@@ -223,48 +367,29 @@ fun ContentView(
                 )
             }
 
-            if (state.isUnreliable) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFF2C1E0A),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFFF9F0A))
-                ) {
-                    Text(
-                        text = "? CALIBRATION NEEDED",
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                        color = Color(0xFFFF9F0A),
-                        fontSize = 11.sp,
-                        fontFamily = FontFamily.Monospace,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            } else if (!state.isCompassAvailable) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = if (state.isCalibrated) Color(0xFF1B3820) else Color(0xFF1C1C1E),
-                    border = androidx.compose.foundation.BorderStroke(
-                        1.dp,
-                        if (state.isCalibrated) Color(0xFF34C759) else Color(0xFF3A3A3C)
-                    )
-                ) {
-                    Text(
-                        text = if (state.isCalibrated) "? TARE ACTIVE" else "+ TAP TO ZERO",
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                        color = if (state.isCalibrated) Color(0xFF34C759) else Color(0xFF8E8E93),
-                        fontSize = 11.sp,
-                        fontFamily = FontFamily.Monospace,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
+            Spacer(modifier = Modifier.height(8.dp))
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = if (state.isCalibrated) Color(0xFF1B3820) else Color(0xFF1C1C1E),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    if (state.isCalibrated) Color(0xFF34C759) else Color(0xFF3A3A3C)
+                )
+            ) {
+                Text(
+                    text = if (state.isCalibrated) "+ TARE ACTIVE" else "+ TAP TO ZERO",
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                    color = if (state.isCalibrated) Color(0xFF34C759) else Color(0xFF8E8E93),
+                    fontSize = 11.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         }
 
-        // Dual-Disc Spirit Level & Dial Canvas
         Box(
             modifier = Modifier
-                .size(300.dp)
+                .size(280.dp)
                 .padding(8.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -277,24 +402,17 @@ fun ContentView(
             )
         }
 
-        // Monospace Pitch & Roll Metric Cards
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.padding(bottom = 20.dp)
         ) {
+            val degSymbol = "\u00B0"
             if (!state.isCompassAvailable) {
                 Text(
-                    text = "MAGNETOMETER UNAVAILABLE — LEVEL ONLY",
+                    text = "MAGNETOMETER UNAVAILABLE - LEVEL ONLY",
                     fontSize = 11.sp,
                     fontFamily = FontFamily.Monospace,
                     color = Color(0xFF636366),
-                    modifier = Modifier.padding(bottom = 8.dp)
-                )
-            } else if (state.isUnreliable) {
-                Text(
-                    text = "Wave phone in a figure-8 pattern to calibrate",
-                    fontSize = 12.sp,
-                    color = Color(0xFF8E8E93),
                     modifier = Modifier.padding(bottom = 8.dp)
                 )
             }
@@ -303,8 +421,8 @@ fun ContentView(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                MetricPill(label = "PITCH", value = "${state.pitchDegrees.roundToInt()}°")
-                MetricPill(label = "ROLL", value = "${state.rollDegrees.roundToInt()}°")
+                MetricPill(label = "PITCH", value = "${state.pitchDegrees.roundToInt()}$degSymbol")
+                MetricPill(label = "ROLL", value = "${state.rollDegrees.roundToInt()}$degSymbol")
             }
         }
     }
@@ -474,32 +592,5 @@ fun getCardinalDirection(heading: Float): String {
         normalized < 247.5 -> "SW"
         normalized < 292.5 -> "W"
         else -> "NW"
-    }
-}
-
-@Composable
-fun NoSensorFallbackView() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Text(
-            text = "HARDWARE UNAVAILABLE",
-            fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.Bold,
-            fontSize = 16.sp,
-            color = Color(0xFFFF3B30),
-            letterSpacing = 1.sp
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        Text(
-            text = "Neither rotation vector nor accelerometer could be registered on this device.",
-            fontSize = 13.sp,
-            color = Color(0xFF8E8E93),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
-        )
     }
 }
