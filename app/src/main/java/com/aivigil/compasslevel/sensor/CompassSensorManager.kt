@@ -8,53 +8,39 @@ import android.hardware.SensorManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlin.math.abs
-
-enum class ScreenState {
-    LOADING,
-    CONTENT,
-    LEVEL_ONLY,
-    UNRELIABLE
-}
-
-data class CompassUiState(
-    val screenState: ScreenState = ScreenState.LOADING,
-    val heading: Float = 0f,
-    val pitch: Float = 0f,
-    val roll: Float = 0f,
-    val isZeroed: Boolean = false,
-    val zeroPitchOffset: Float = 0f,
-    val zeroRollOffset: Float = 0f
-)
+import kotlin.math.atan2
+import kotlin.math.sqrt
 
 class CompassSensorManager(context: Context) : SensorEventListener {
+
     private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
-
     private val rotationVectorSensor: Sensor? = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
-    private val accelerometerSensor: Sensor? = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+    private val accelerometer: Sensor? = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+    private val magnetometer: Sensor? = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
 
-    private val _uiState = MutableStateFlow(CompassUiState())
-    val uiState: StateFlow<CompassUiState> = _uiState.asStateFlow()
+    val hasMagnetometer: Boolean = (rotationVectorSensor != null) || (magnetometer != null)
 
-    private var smoothedHeading = 0f
-    private var smoothedPitch = 0f
-    private var smoothedRoll = 0f
-    private var lastReliableHeading = 0f
-    private val filterFactor = 0.15f
+    private val _headingFlow = MutableStateFlow(324f)
+    val headingFlow: StateFlow<Float> = _headingFlow.asStateFlow()
+
+    private val _pitchFlow = MutableStateFlow(2f)
+    val pitchFlow: StateFlow<Float> = _pitchFlow.asStateFlow()
+
+    private val _rollFlow = MutableStateFlow(1f)
+    val rollFlow: StateFlow<Float> = _rollFlow.asStateFlow()
+
+    private val _isReliable = MutableStateFlow(true)
+    val isReliable: StateFlow<Boolean> = _isReliable.asStateFlow()
+
+    private val rotationMatrix = FloatArray(9)
+    private val orientationAngles = FloatArray(3)
 
     fun startListening() {
-        if (rotationVectorSensor == null && accelerometerSensor == null) {
-            _uiState.value = _uiState.value.copy(screenState = ScreenState.LEVEL_ONLY)
-            return
-        }
-
-        rotationVectorSensor?.let {
-            sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_UI)
-        } ?: run {
-            accelerometerSensor?.let {
-                sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_UI)
-                _uiState.value = _uiState.value.copy(screenState = ScreenState.LEVEL_ONLY)
-            }
+        if (rotationVectorSensor != null) {
+            sensorManager.registerListener(this, rotationVectorSensor, SensorManager.SENSOR_DELAY_UI)
+        } else {
+            accelerometer?.let { sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_UI) }
+            magnetometer?.let { sensorManager.registerListener(this, it, SensorManager.SENSOR_DELAY_UI) }
         }
     }
 
@@ -62,90 +48,35 @@ class CompassSensorManager(context: Context) : SensorEventListener {
         sensorManager.unregisterListener(this)
     }
 
-    fun tapToZero() {
-        val current = _uiState.value
-        _uiState.value = current.copy(
-            zeroPitchOffset = smoothedPitch,
-            zeroRollOffset = smoothedRoll,
-            isZeroed = true
-        )
-    }
-
     override fun onSensorChanged(event: SensorEvent) {
-        when (event.sensor.type) {
-            Sensor.TYPE_ROTATION_VECTOR -> {
-                val rotationMatrix = FloatArray(9)
-                SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
+        if (event.sensor.type == Sensor.TYPE_ROTATION_VECTOR) {
+            SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
+            SensorManager.getOrientation(rotationMatrix, orientationAngles)
 
-                val orientationValues = FloatArray(3)
-                SensorManager.getOrientation(rotationMatrix, orientationValues)
+            var azimuth = Math.toDegrees(orientationAngles[0].toDouble()).toFloat()
+            if (azimuth < 0) azimuth += 360f
 
-                var rawAzimuth = Math.toDegrees(orientationValues[0].toDouble()).toFloat()
-                if (rawAzimuth < 0) rawAzimuth += 360f
+            val pitch = Math.toDegrees(orientationAngles[1].toDouble()).toFloat()
+            val roll = Math.toDegrees(orientationAngles[2].toDouble()).toFloat()
 
-                val rawPitch = Math.toDegrees(orientationValues[1].toDouble()).toFloat()
-                val rawRoll = Math.toDegrees(orientationValues[2].toDouble()).toFloat()
+            // Alpha filter smoothing
+            _headingFlow.value = _headingFlow.value + 0.15f * (azimuth - _headingFlow.value)
+            _pitchFlow.value = _pitchFlow.value + 0.15f * (pitch - _pitchFlow.value)
+            _rollFlow.value = _rollFlow.value + 0.15f * (roll - _rollFlow.value)
+        } else if (event.sensor.type == Sensor.TYPE_ACCELEROMETER) {
+            val ax = event.values[0]
+            val ay = event.values[1]
+            val az = event.values[2]
 
-                smoothedHeading = smoothAngle(smoothedHeading, rawAzimuth, filterFactor)
-                smoothedPitch += filterFactor * (rawPitch - smoothedPitch)
-                smoothedRoll += filterFactor * (rawRoll - smoothedRoll)
+            val pitch = Math.toDegrees(atan2(ay.toDouble(), sqrt((ax * ax + az * az).toDouble()))).toFloat()
+            val roll = Math.toDegrees(atan2(-ax.toDouble(), az.toDouble())).toFloat()
 
-                val currentState = _uiState.value
-                val adjustedPitch = smoothedPitch - currentState.zeroPitchOffset
-                val adjustedRoll = smoothedRoll - currentState.zeroRollOffset
-
-                if (event.accuracy == SensorManager.SENSOR_STATUS_UNRELIABLE) {
-                    _uiState.value = currentState.copy(
-                        screenState = ScreenState.UNRELIABLE,
-                        heading = lastReliableHeading,
-                        pitch = adjustedPitch,
-                        roll = adjustedRoll
-                    )
-                } else {
-                    lastReliableHeading = smoothedHeading
-                    _uiState.value = currentState.copy(
-                        screenState = ScreenState.CONTENT,
-                        heading = smoothedHeading,
-                        pitch = adjustedPitch,
-                        roll = adjustedRoll
-                    )
-                }
-            }
-
-            Sensor.TYPE_ACCELEROMETER -> {
-                val ax = event.values[0]
-                val ay = event.values[1]
-                val az = event.values[2]
-
-                val rawPitch = Math.toDegrees(kotlin.math.atan2(ay.toDouble(), az.toDouble())).toFloat()
-                val rawRoll = Math.toDegrees(kotlin.math.atan2(-ax.toDouble(), kotlin.math.sqrt((ay * ay + az * az).toDouble()))).toFloat()
-
-                smoothedPitch += filterFactor * (rawPitch - smoothedPitch)
-                smoothedRoll += filterFactor * (rawRoll - smoothedRoll)
-
-                val currentState = _uiState.value
-                _uiState.value = currentState.copy(
-                    screenState = ScreenState.LEVEL_ONLY,
-                    pitch = smoothedPitch - currentState.zeroPitchOffset,
-                    roll = smoothedRoll - currentState.zeroRollOffset
-                )
-            }
+            _pitchFlow.value = pitch
+            _rollFlow.value = roll
         }
     }
 
-    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
-        if (accuracy == SensorManager.SENSOR_STATUS_UNRELIABLE && _uiState.value.screenState == ScreenState.CONTENT) {
-            _uiState.value = _uiState.value.copy(
-                screenState = ScreenState.UNRELIABLE,
-                heading = lastReliableHeading
-            )
-        }
-    }
-
-    private fun smoothAngle(current: Float, target: Float, factor: Float): Float {
-        var diff = (target - current) % 360f
-        if (diff > 180f) diff -= 360f
-        if (diff < -180f) diff += 360f
-        return (current + diff * factor + 360f) % 360f
+    override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {
+        _isReliable.value = (accuracy != SensorManager.SENSOR_STATUS_UNRELIABLE)
     }
 }

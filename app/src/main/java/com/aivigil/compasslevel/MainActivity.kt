@@ -3,39 +3,67 @@
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
 import com.aivigil.compasslevel.sensor.CompassSensorManager
-import com.aivigil.compasslevel.sensor.ScreenState
 import com.aivigil.compasslevel.ui.*
+import com.aivigil.compasslevel.ui.theme.CompassLevelTheme
+import com.aivigil.compasslevel.ui.theme.PureBlack
 
 class MainActivity : ComponentActivity() {
+
     private lateinit var sensorManager: CompassSensorManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-
         sensorManager = CompassSensorManager(this)
 
         setContent {
-            val uiState by sensorManager.uiState.collectAsState()
+            CompassLevelTheme {
+                var selectedTab by remember { mutableStateOf("Live") }
+                val heading by sensorManager.headingFlow.collectAsState()
+                val pitch by sensorManager.pitchFlow.collectAsState()
+                val roll by sensorManager.rollFlow.collectAsState()
+                val isReliable by sensorManager.isReliable.collectAsState()
+                val hasMagnetometer = sensorManager.hasMagnetometer
 
-            when (uiState.screenState) {
-                ScreenState.LOADING -> ScreenLoading()
-                ScreenState.CONTENT -> ScreenContent(
-                    state = uiState,
-                    onMenuClick = { /* Settings menu */ }
-                )
-                ScreenState.LEVEL_ONLY -> ScreenFallbackLevel(
-                    state = uiState,
-                    onTapToZero = { sensorManager.tapToZero() }
-                )
-                ScreenState.UNRELIABLE -> ScreenUnreliable(
-                    state = uiState,
-                    onStartCalibration = { /* Rewarded Video / Figure-8 calibration */ }
-                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(PureBlack)
+                        .statusBarsPadding()
+                        .navigationBarsPadding()
+                ) {
+                    TopActionBar()
+                    StateSelectorBar(
+                        selectedTab = selectedTab,
+                        onTabSelected = { selectedTab = it }
+                    )
+
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                    ) {
+                        when (selectedTab) {
+                            "Loading" -> ScreenLoadingView()
+                            "Content" -> ScreenContentView(pitch = -2f, roll = -1f, isStaticMock = true)
+                            "Empty" -> ScreenEmptyView()
+                            "Error" -> ScreenErrorView()
+                            else -> {
+                                when {
+                                    !hasMagnetometer -> ScreenContentView(pitch = pitch, roll = roll, isStaticMock = false)
+                                    !isReliable -> ScreenErrorView()
+                                    else -> ScreenLiveCompassView(heading = heading, pitch = pitch, roll = roll)
+                                }
+                            }
+                        }
+                    }
+
+                    AdBannerBottom()
+                }
             }
         }
     }

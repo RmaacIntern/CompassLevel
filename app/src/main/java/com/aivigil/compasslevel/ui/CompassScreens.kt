@@ -1,21 +1,16 @@
 ﻿package com.aivigil.compasslevel.ui
 
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontFamily
@@ -23,388 +18,245 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.aivigil.compasslevel.sensor.CompassUiState
 import com.aivigil.compasslevel.ui.theme.*
-import kotlin.math.min
-import kotlin.math.roundToInt
 
 @Composable
-fun ScreenLoading() {
+fun ScreenLoadingView() {
     val infiniteTransition = rememberInfiniteTransition(label = "spin")
     val rotation by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
-        animationSpec = infiniteRepeatable(animation = tween(1200, easing = LinearEasing)),
-        label = "rotation"
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "spin"
     )
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Background)
-            .safeDrawingPadding(),
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Canvas(modifier = Modifier.size(72.dp)) {
+            drawArc(
+                color = TargetGreen,
+                startAngle = rotation,
+                sweepAngle = 90f,
+                useCenter = false,
+                style = Stroke(3.dp.toPx(), cap = StrokeCap.Round)
+            )
+        }
+        Spacer(modifier = Modifier.height(28.dp))
+        Text(
+            text = "INITIALIZING SENSORS",
+            color = TextMuted,
+            fontSize = 13.sp,
+            fontFamily = FontFamily.Monospace,
+            letterSpacing = 1.5.sp
+        )
+    }
+}
+
+@Composable
+fun ScreenLiveCompassView(heading: Float, pitch: Float, roll: Float) {
+    val cardinal = when (heading) {
+        in 22.5f..67.5f -> "NE"
+        in 67.5f..112.5f -> "E"
+        in 112.5f..157.5f -> "SE"
+        in 157.5f..202.5f -> "S"
+        in 202.5f..247.5f -> "SW"
+        in 247.5f..292.5f -> "W"
+        in 292.5f..337.5f -> "NW"
+        else -> "N"
+    }
+
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        TopAppBar()
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(top = 16.dp)
+        ) {
+            Text(
+                text = "${heading.toInt()}°",
+                fontSize = 72.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextWhite
+            )
+            Text(
+                text = cardinal,
+                color = TextMuted,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold,
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 2.sp
+            )
+        }
+
+        CompassRoseDial(heading = heading, pitch = pitch, roll = roll)
 
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            modifier = Modifier.padding(bottom = 16.dp)
         ) {
-            Box(modifier = Modifier.size(80.dp), contentAlignment = Alignment.Center) {
-                androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
-                    drawCircle(color = SurfaceMid, radius = 36.dp.toPx(), style = Stroke(3.dp.toPx()))
-                }
-                androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize().rotate(rotation)) {
-                    drawArc(
-                        color = AccentGreen,
-                        startAngle = 0f,
-                        sweepAngle = 100f,
-                        useCenter = false,
-                        style = Stroke(3.dp.toPx(), cap = StrokeCap.Round)
-                    )
-                }
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                PillCard(label = "PITCH", value = "${pitch.toInt()}°")
+                PillCard(label = "ROLL", value = "${roll.toInt()}°")
             }
+        }
+    }
+}
 
-            Spacer(Modifier.height(28.dp))
+@Composable
+fun ScreenContentView(pitch: Float, roll: Float, isStaticMock: Boolean = false) {
+    val displayPitch = if (isStaticMock) "-2" else "${pitch.toInt()}"
+    val displayRoll = if (isStaticMock) "-1" else "${roll.toInt()}"
+    val inclination = kotlin.math.max(kotlin.math.abs(pitch), kotlin.math.abs(roll)).toInt()
+    val displayDeg = if (isStaticMock) "3°" else "${inclination}°"
 
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(top = 16.dp)
+        ) {
             Text(
-                text = "INITIALIZING SENSORS",
-                color = TextSecondary,
-                fontSize = 11.sp,
-                fontFamily = FontFamily.Monospace,
-                letterSpacing = 1.8.sp
+                text = displayDeg,
+                fontSize = 72.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextWhite
             )
-
-            Spacer(Modifier.height(10.dp))
-
+            Text(
+                text = "LEVEL ONLY",
+                color = TextMuted,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.SemiBold,
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 1.sp
+            )
+            Spacer(modifier = Modifier.height(12.dp))
             Box(
                 modifier = Modifier
-                    .width(140.dp)
-                    .height(2.dp)
-                    .background(SurfaceMid)
+                    .background(CardSurface, RoundedCornerShape(8.dp))
+                    .padding(horizontal = 14.dp, vertical = 6.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxHeight()
-                        .fillMaxWidth(0.6f)
-                        .background(AccentGreen)
+                Text(
+                    text = "+ TAP TO ZERO",
+                    color = TextMuted,
+                    fontSize = 11.sp,
+                    fontFamily = FontFamily.Monospace
                 )
             }
-
-            Spacer(Modifier.height(24.dp))
-
-            Text(
-                text = "COMPASS & LEVEL",
-                color = BorderStrong,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Thin,
-                letterSpacing = 3.sp
-            )
         }
 
-        AdBanner()
+        ReticleSpiritLevel(pitch = pitch, roll = roll)
+
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(bottom = 16.dp)
+        ) {
+            Text(
+                text = "MAGNETOMETER UNAVAILABLE - LEVEL ONLY",
+                color = BorderStrong,
+                fontSize = 11.sp,
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 0.5.sp
+            )
+            Spacer(modifier = Modifier.height(14.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                PillCard(label = "PITCH", value = "$displayPitch°")
+                PillCard(label = "ROLL", value = "$displayRoll°")
+            }
+        }
     }
 }
 
 @Composable
-fun ScreenContent(
-    state: CompassUiState,
-    onMenuClick: () -> Unit = {}
-) {
+fun ScreenEmptyView() {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Background)
-            .safeDrawingPadding(),
-        verticalArrangement = Arrangement.SpaceBetween
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        TopAppBar(onOverflowClick = onMenuClick)
-
-        Column(
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .size(72.dp)
+                .background(CardSurface, RoundedCornerShape(16.dp)),
+            contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "${state.heading.roundToInt()}°",
-                color = TextPrimary,
-                fontSize = 64.sp,
-                fontWeight = FontWeight.Thin,
-                lineHeight = 64.sp
-            )
-            Text(
-                text = getCardinalFromDegrees(state.heading),
-                color = TextSecondary,
+                text = "N/A",
+                color = TextMuted,
                 fontSize = 18.sp,
                 fontFamily = FontFamily.Monospace,
-                fontWeight = FontWeight.Light,
-                letterSpacing = 3.sp
+                fontWeight = FontWeight.Bold
             )
         }
-
-        // Dynamic auto-fitting dial box
-        BoxWithConstraints(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .padding(vertical = 8.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            val dialSize = min(maxHeight.value, maxWidth.value) * 0.82f
-            val dialDp = min(dialSize, 260f).dp
-
-            Box(modifier = Modifier.size(dialDp), contentAlignment = Alignment.Center) {
-                CompassRose(heading = state.heading, modifier = Modifier.fillMaxSize())
-                SpiritLevel(pitch = state.pitch, roll = state.roll, modifier = Modifier.fillMaxSize(0.38f))
-            }
-        }
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 14.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally)
-        ) {
-            PillCard(label = "PITCH", value = "${state.pitch.roundToInt()}°")
-            PillCard(label = "ROLL", value = "${state.roll.roundToInt()}°")
-        }
-
-        AdBanner()
-    }
-}
-
-@Composable
-fun ScreenFallbackLevel(
-    state: CompassUiState,
-    onTapToZero: () -> Unit = {}
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Background)
-            .safeDrawingPadding(),
-        verticalArrangement = Arrangement.SpaceBetween
-    ) {
-        TopAppBar()
-
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "${state.pitch.roundToInt()}°",
-                color = TextPrimary,
-                fontSize = 64.sp,
-                fontWeight = FontWeight.Thin
-            )
-
-            Spacer(Modifier.height(6.dp))
-
-            Row(
-                modifier = Modifier
-                    .background(SurfaceMid, RoundedCornerShape(8.dp))
-                    .border(1.dp, BorderSubtle, RoundedCornerShape(8.dp))
-                    .clickable { onTapToZero() }
-                    .padding(horizontal = 14.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Text("+", color = AccentGreen, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                Text(
-                    text = "TAP TO ZERO",
-                    color = TextPrimary,
-                    fontSize = 11.sp,
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Medium,
-                    letterSpacing = 1.2.sp
-                )
-            }
-        }
-
-        BoxWithConstraints(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .padding(vertical = 8.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            val dialSize = min(maxHeight.value, maxWidth.value) * 0.82f
-            val dialDp = min(dialSize, 260f).dp
-
-            Box(modifier = Modifier.size(dialDp), contentAlignment = Alignment.Center) {
-                androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxSize()) {
-                    val c = center
-                    val r = size.width / 2f
-                    drawCircle(color = BorderSubtle, radius = r * 0.95f, center = c, style = Stroke(1.dp.toPx()))
-                    drawCircle(color = BorderSubtle, radius = r * 0.65f, center = c, style = Stroke(1.dp.toPx()))
-                    drawLine(color = BorderStrong, start = Offset(c.x - r, c.y), end = Offset(c.x + r, c.y), strokeWidth = 1.dp.toPx())
-                    drawLine(color = BorderStrong, start = Offset(c.x, c.y - r), end = Offset(c.x, c.y + r), strokeWidth = 1.dp.toPx())
-                    drawCircle(color = BorderStrong, radius = 2.dp.toPx(), center = c)
-                }
-                SpiritLevel(pitch = state.pitch, roll = state.roll, modifier = Modifier.fillMaxSize(0.38f))
-            }
-        }
-
+        Spacer(modifier = Modifier.height(24.dp))
         Text(
-            text = "MAGNETOMETER UNAVAILABLE — LEVEL ONLY",
-            color = BorderStrong,
-            fontSize = 11.sp,
-            letterSpacing = 0.5.sp,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp)
+            text = "NO SENSOR ACTIVITY",
+            color = TextWhite,
+            fontSize = 14.sp,
+            fontFamily = FontFamily.Monospace,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.sp
         )
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 14.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally)
-        ) {
-            PillCard(label = "PITCH", value = "${state.pitch.roundToInt()}°")
-            PillCard(label = "ROLL", value = "${state.roll.roundToInt()}°")
-        }
-
-        AdBanner()
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Device sensors are idle or waiting for\nmotion input.",
+            color = TextMuted,
+            fontSize = 12.sp,
+            textAlign = TextAlign.Center,
+            lineHeight = 18.sp
+        )
     }
 }
 
 @Composable
-fun ScreenUnreliable(
-    state: CompassUiState,
-    onStartCalibration: () -> Unit = {}
-) {
+fun ScreenErrorView() {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Background)
-            .safeDrawingPadding(),
-        verticalArrangement = Arrangement.SpaceBetween
+        modifier = Modifier.fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
-        TopAppBar()
-
-        Column(
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(text = "${state.heading.roundToInt()}°", color = TextPrimary, fontSize = 56.sp, fontWeight = FontWeight.Thin)
-                Spacer(Modifier.width(8.dp))
-                Text(text = getCardinalFromDegrees(state.heading), color = TextSecondary, fontSize = 28.sp, fontWeight = FontWeight.Light)
-            }
-
-            Spacer(Modifier.height(6.dp))
-
-            Row(
-                modifier = Modifier
-                    .background(WarningAmberBg, RoundedCornerShape(8.dp))
-                    .border(1.dp, WarningAmber, RoundedCornerShape(8.dp))
-                    .padding(horizontal = 12.dp, vertical = 5.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                Text("⚠", color = WarningAmber, fontSize = 11.sp)
-                Text(
-                    text = "CALIBRATION NEEDED",
-                    color = WarningAmber,
-                    fontSize = 10.sp,
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Medium,
-                    letterSpacing = 1.3.sp
-                )
-            }
-        }
-
-        BoxWithConstraints(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .padding(vertical = 6.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            val dialSize = min(maxHeight.value, maxWidth.value) * 0.82f
-            val dialDp = min(dialSize, 260f).dp
-
-            Box(modifier = Modifier.size(dialDp), contentAlignment = Alignment.Center) {
-                CompassRose(heading = state.heading, modifier = Modifier.fillMaxSize().alpha(0.28f))
-                SpiritLevel(pitch = state.pitch, roll = state.roll, modifier = Modifier.fillMaxSize(0.38f).alpha(0.4f))
-
-                Box(
-                    modifier = Modifier
-                        .size(34.dp)
-                        .background(SurfaceMid, CircleShape)
-                        .border(1.dp, WarningAmber, CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("🔒", fontSize = 13.sp)
-                }
-            }
-        }
-
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .border(1.dp, AmberWarning, RoundedCornerShape(8.dp))
+                .padding(horizontal = 14.dp, vertical = 8.dp)
         ) {
             Text(
-                text = "Wave phone in a figure-8 pattern to calibrate",
-                color = TextSecondary,
+                text = "! CALIBRATION NEEDED",
+                color = AmberWarning,
                 fontSize = 12.sp,
-                textAlign = TextAlign.Center,
-                lineHeight = 18.sp,
-                modifier = Modifier.width(220.dp)
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp
             )
-
-            Spacer(Modifier.height(10.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally)
-            ) {
-                PillCard(label = "PITCH", value = "${state.pitch.roundToInt()}°")
-                PillCard(label = "ROLL", value = "${state.roll.roundToInt()}°")
-            }
-
-            Spacer(Modifier.height(10.dp))
-
-            OutlinedButton(
-                onClick = onStartCalibration,
-                border = androidx.compose.foundation.BorderStroke(1.dp, WarningAmber),
-                shape = RoundedCornerShape(4.dp),
-                colors = ButtonDefaults.outlinedButtonColors(containerColor = Color.Transparent),
-                modifier = Modifier.padding(bottom = 12.dp)
-            ) {
-                Text(
-                    text = "START CALIBRATION",
-                    color = WarningAmber,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    letterSpacing = 1.sp
-                )
-            }
         }
-
-        AdBanner()
-    }
-}
-
-fun getCardinalFromDegrees(deg: Float): String {
-    val norm = (deg % 360 + 360) % 360
-    return when {
-        norm >= 337.5 || norm < 22.5 -> "N"
-        norm < 67.5 -> "NE"
-        norm < 112.5 -> "E"
-        norm < 157.5 -> "SE"
-        norm < 202.5 -> "S"
-        norm < 247.5 -> "SW"
-        norm < 292.5 -> "W"
-        else -> "NW"
+        Spacer(modifier = Modifier.height(28.dp))
+        Text(
+            text = "MAGNETIC INTERFERENCE\nDETECTED",
+            color = TextWhite,
+            fontSize = 14.sp,
+            fontFamily = FontFamily.Monospace,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Center,
+            letterSpacing = 1.sp,
+            lineHeight = 22.sp
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(
+            text = "Wave phone in a figure-8 pattern to\nrecalibrate the sensor compass.",
+            color = TextMuted,
+            fontSize = 12.sp,
+            textAlign = TextAlign.Center,
+            lineHeight = 18.sp
+        )
     }
 }
