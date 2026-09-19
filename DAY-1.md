@@ -21,3 +21,6 @@
 - `ScreenContent`: Live interactive dial and spirit level.
 - `ScreenFallbackLevel`: Accelerometer-only spirit level with reticle and tap-to-zero.
 - `ScreenUnreliable`: Visual lock badge and figure-8 calibration instructions.
+
+## 4. Gate 1B Wireframe Deliverable
+- Interactive 4-state visual board generated and saved to `docs/wireframe_board.html`.
