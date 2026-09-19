@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.aivigil.day0check"
+    namespace = "com.aivigil.compasslevel"
     compileSdk = 35
 
     defaultConfig {
