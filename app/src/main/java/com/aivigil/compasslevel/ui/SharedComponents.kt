@@ -11,7 +11,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,6 +27,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontFamily
@@ -31,177 +35,334 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aivigil.compasslevel.ui.theme.*
+import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TOP BAR: Clean Aeronautical Header
+// GOOGLE MATERIAL 3 TOP APP BAR
 // ─────────────────────────────────────────────────────────────────────────────
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun GoogleTopAppBar(
+    title: String,
+    isReliable: Boolean = true,
+    notesCount: Int = 0,
+    skin: SkinPalette,
+    isDarkMode: Boolean = true,
+    onThemeToggle: () -> Unit = {},
+    onNotesClick: () -> Unit = {},
+    onSkinsClick: () -> Unit = {},
+    onCalibrateClick: () -> Unit = {},
+    onSettingsClick: () -> Unit = {}
+) {
+    TopAppBar(
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = skin.textPrimary,
+                    fontFamily = FontFamily.Default,
+                    letterSpacing = 0.5.sp,
+                    maxLines = 1
+                )
+                // Calm hardware diagnostic pill (Nothing style dot matrix badge)
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(skin.cardBackground)
+                        .border(1.dp, skin.cardBorder, RoundedCornerShape(12.dp))
+                        .clickable { onCalibrateClick() }
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(5.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(skin.primaryAccent)
+                        )
+                        Text(
+                            text = "ACTIVE",
+                            color = skin.textPrimary,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily.Default,
+                            letterSpacing = 0.5.sp
+                        )
+                    }
+                }
+            }
+        },
+        actions = {
+            // Light / Dark Mode Toggle Button
+            IconButton(
+                onClick = onThemeToggle,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    imageVector = if (isDarkMode) Icons.Outlined.LightMode else Icons.Outlined.DarkMode,
+                    contentDescription = if (isDarkMode) "Switch to Light Mode" else "Switch to Dark Mode",
+                    tint = skin.textPrimary
+                )
+            }
+
+            // Themes / Skins Button
+            IconButton(
+                onClick = onSkinsClick,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Palette,
+                    contentDescription = "Instrument Skins",
+                    tint = skin.primaryAccent
+                )
+            }
+
+            // Notes Button with Badge
+            IconButton(
+                onClick = onNotesClick,
+                modifier = Modifier.size(40.dp)
+            ) {
+                BadgedBox(
+                    badge = {
+                        if (notesCount > 0) {
+                            Badge(
+                                containerColor = skin.primaryAccent,
+                                contentColor = PureBlack
+                            ) {
+                                Text("$notesCount", fontWeight = FontWeight.Bold, fontSize = 10.sp)
+                            }
+                        }
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.BookmarkBorder,
+                        contentDescription = "Measurement Notes",
+                        tint = skin.textPrimary
+                    )
+                }
+            }
+
+            // Settings Button
+            IconButton(
+                onClick = onSettingsClick,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Settings,
+                    contentDescription = "Settings",
+                    tint = skin.textSecondary
+                )
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = skin.surfaceBackground,
+            titleContentColor = skin.textPrimary
+        )
+    )
+}
+
+@Composable
+fun GoogleTopAppBar(
+    title: String,
+    isReliable: Boolean = true,
+    notesCount: Int = 0,
+    skin: AppSkin = AppSkin.CLASSIC_EMERALD,
+    onNotesClick: () -> Unit = {},
+    onSkinsClick: () -> Unit = {},
+    onCalibrateClick: () -> Unit = {},
+    onSettingsClick: () -> Unit = {}
+) {
+    GoogleTopAppBar(
+        title = title,
+        isReliable = isReliable,
+        notesCount = notesCount,
+        skin = skin.palette(true),
+        isDarkMode = true,
+        onThemeToggle = {},
+        onNotesClick = onNotesClick,
+        onSkinsClick = onSkinsClick,
+        onCalibrateClick = onCalibrateClick,
+        onSettingsClick = onSettingsClick
+    )
+}
 
 @Composable
 fun TopActionBar(
     isReliable: Boolean = true,
+    skin: AppSkin = AppSkin.CLASSIC_EMERALD,
+    onNotesClick: () -> Unit = {},
+    onSkinsClick: () -> Unit = {},
     onCalibrateClick: () -> Unit = {},
     onSettingsClick: () -> Unit = {}
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(DarkSurface)
-            .padding(horizontal = 20.dp, vertical = 14.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(8.dp)
-                    .clip(CircleShape)
-                    .background(if (isReliable) NeonEmerald else AmberWarning)
-            )
-            Text(
-                text = "COMPASS & LEVEL",
-                color = TextPrimary,
-                fontSize = 13.sp,
-                fontFamily = FontFamily.Monospace,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.5.sp
-            )
-        }
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            if (!isReliable) {
-                Box(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(GlowAmberSoft)
-                        .border(0.5.dp, AmberWarning, RoundedCornerShape(6.dp))
-                        .clickable { onCalibrateClick() }
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Text(
-                        text = "CALIBRATE",
-                        color = AmberWarning,
-                        fontSize = 10.sp,
-                        fontFamily = FontFamily.Monospace,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(CardSurface)
-                    .border(1.dp, BorderStrong, RoundedCornerShape(8.dp))
-                    .clickable { onSettingsClick() }
-                    .padding(horizontal = 10.dp, vertical = 4.dp)
-            ) {
-                Text(
-                    text = "⚙ SETTINGS",
-                    color = TextSecondary,
-                    fontSize = 11.sp,
-                    fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
-    }
-
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(1.dp)
-            .background(BorderSubtle)
+    GoogleTopAppBar(
+        title = "Compass & Level",
+        isReliable = isReliable,
+        notesCount = 0,
+        skin = skin,
+        onNotesClick = onNotesClick,
+        onSkinsClick = onSkinsClick,
+        onCalibrateClick = onCalibrateClick,
+        onSettingsClick = onSettingsClick
     )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// COMMERCIAL SEGMENTED SWITCHER (Compass vs Level)
+// GOOGLE MATERIAL 3 NAVIGATION BAR
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-fun SegmentedModeSelector(
+fun GoogleNavigationBar(
     selectedMode: String,
-    onModeSelected: (String) -> Unit
+    onModeSelected: (String) -> Unit,
+    skin: SkinPalette
 ) {
-    val modes = listOf("Compass", "Level")
+    val haptic = LocalHapticFeedback.current
+    val navItems = listOf(
+        Triple("Compass", Icons.Filled.Explore, Icons.Outlined.Explore),
+        Triple("Level", Icons.Filled.Straighten, Icons.Outlined.Straighten),
+        Triple("Clinometer", Icons.Filled.CameraAlt, Icons.Outlined.CameraAlt),
+        Triple("Location", Icons.Filled.NearMe, Icons.Outlined.NearMe)
+    )
 
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 10.dp),
-        contentAlignment = Alignment.Center
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = skin.surfaceBackground,
+        tonalElevation = 0.dp
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(12.dp))
-                .background(CardSurface)
-                .border(1.dp, BorderSubtle, RoundedCornerShape(12.dp))
-                .padding(4.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                .windowInsetsPadding(WindowInsets.navigationBars)
         ) {
-            modes.forEach { mode ->
-                val isSelected = mode == selectedMode
-                val bg by animateColorAsState(
-                    targetValue = if (isSelected) CardSurfaceElevated else Color.Transparent,
-                    animationSpec = tween(150),
-                    label = "modeBg"
-                )
-                val textColor by animateColorAsState(
-                    targetValue = if (isSelected) TextWhite else TextSecondary,
-                    animationSpec = tween(150),
-                    label = "modeText"
-                )
+            // Fine hairline divider
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(0.75.dp)
+                    .background(skin.cardBorder.copy(alpha = 0.6f))
+            )
 
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(bg)
-                        .border(
-                            width = if (isSelected) 1.dp else 0.dp,
-                            color = if (isSelected) BorderStrong else Color.Transparent,
-                            shape = RoundedCornerShape(8.dp)
-                        )
-                        .clickable { onModeSelected(mode) }
-                        .padding(vertical = 10.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = if (mode == "Compass") "COMPASS" else "SPIRIT LEVEL",
-                        color = textColor,
-                        fontSize = 12.sp,
-                        fontFamily = FontFamily.Monospace,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        letterSpacing = 1.sp
-                    )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(60.dp)
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceAround
+            ) {
+                navItems.forEach { (mode, activeIcon, inactiveIcon) ->
+                    val isSelected = selectedMode == mode
+
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(
+                                if (isSelected) skin.primaryAccent.copy(alpha = 0.12f)
+                                else Color.Transparent
+                            )
+                            .clickable {
+                                if (!isSelected) {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    onModeSelected(mode)
+                                }
+                            }
+                            .padding(vertical = 6.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                imageVector = if (isSelected) activeIcon else inactiveIcon,
+                                contentDescription = mode,
+                                tint = if (isSelected) skin.primaryAccent else skin.textSecondary.copy(alpha = 0.7f),
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.height(3.dp))
+                            Text(
+                                text = mode,
+                                color = if (isSelected) skin.primaryAccent else skin.textSecondary.copy(alpha = 0.7f),
+                                fontSize = 11.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                fontFamily = FontFamily.Default,
+                                letterSpacing = 0.2.sp,
+                                maxLines = 1
+                            )
+                        }
+                    }
                 }
             }
         }
     }
 }
 
+@Composable
+fun GoogleNavigationBar(
+    selectedMode: String,
+    onModeSelected: (String) -> Unit,
+    skin: AppSkin = AppSkin.CLASSIC_EMERALD
+) {
+    GoogleNavigationBar(
+        selectedMode = selectedMode,
+        onModeSelected = onModeSelected,
+        skin = skin.palette(true)
+    )
+}
+
+// Legacy Segmented Switcher for backwards compatibility
+@Composable
+fun SegmentedModeSelector(
+    selectedMode: String,
+    onModeSelected: (String) -> Unit,
+    skin: SkinPalette
+) {
+    GoogleNavigationBar(
+        selectedMode = selectedMode,
+        onModeSelected = onModeSelected,
+        skin = skin
+    )
+}
+
+@Composable
+fun SegmentedModeSelector(
+    selectedMode: String,
+    onModeSelected: (String) -> Unit,
+    skin: AppSkin = AppSkin.CLASSIC_EMERALD
+) {
+    GoogleNavigationBar(
+        selectedMode = selectedMode,
+        onModeSelected = onModeSelected,
+        skin = skin.palette(true)
+    )
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
-// MONETIZATION-READY AD CONTAINER (50dp strict isolation)
+// MONETIZATION-READY AD CONTAINER (Fully Skinned)
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-fun AdBannerBottom() {
+fun AdBannerBottom(skin: SkinPalette) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(52.dp)
-            .background(BannerBg)
-            .border(width = 0.5.dp, color = BannerBorder, shape = RoundedCornerShape(0.dp)),
+            .height(50.dp)
+            .background(skin.surfaceBackground)
+            .border(width = 0.5.dp, color = skin.cardBorder, shape = RoundedCornerShape(0.dp)),
         contentAlignment = Alignment.Center
     ) {
         Row(
@@ -210,76 +371,227 @@ fun AdBannerBottom() {
         ) {
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(3.dp))
-                    .border(0.5.dp, BannerText, RoundedCornerShape(3.dp))
-                    .padding(horizontal = 4.dp, vertical = 1.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .border(0.5.dp, skin.textSecondary, RoundedCornerShape(4.dp))
+                    .padding(horizontal = 5.dp, vertical = 2.dp)
             ) {
                 Text(
                     text = "AD",
-                    color = BannerText,
+                    color = skin.textSecondary,
                     fontSize = 9.sp,
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = FontFamily.Default,
                     fontWeight = FontWeight.Bold
                 )
             }
             Text(
-                text = "SPONSORED PLACEMENT (320x50)",
-                color = BannerText,
+                text = "Sponsored Placement (320x50)",
+                color = skin.textSecondary,
                 fontSize = 11.sp,
-                fontFamily = FontFamily.Monospace,
-                letterSpacing = 1.sp
+                fontFamily = FontFamily.Default
             )
         }
     }
 }
 
+@Composable
+fun AdBannerBottom(skin: AppSkin = AppSkin.CLASSIC_EMERALD) {
+    AdBannerBottom(skin = skin.palette(true))
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
-// PRECISION PILL CARD (Pitch & Roll Decimal Readouts)
+// PRECISION PILL CARD (Pitch & Roll Decimal Readouts - Fully Skinned)
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
 fun PrecisionPillCard(
     label: String,
-    valueDegrees: Float
+    valueDegrees: Float,
+    skin: SkinPalette
 ) {
     val absVal = abs(valueDegrees)
     val valueColor = when {
-        absVal <= 0.5f -> NeonEmerald
+        absVal <= 0.5f -> skin.primaryAccent
         absVal <= 5.0f -> AmberWarning
-        else           -> TextWhite
+        else           -> skin.textPrimary
     }
 
-    val formattedValue = String.format("%+.1f°", valueDegrees)
+    val formattedValue = String.format(Locale.US, "%+.1f°", valueDegrees)
 
     Row(
         modifier = Modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(CardSurface)
-            .border(1.dp, BorderStrong, RoundedCornerShape(16.dp))
-            .padding(horizontal = 20.dp, vertical = 10.dp),
+            .clip(RoundedCornerShape(12.dp))
+            .background(skin.cardBackground)
+            .border(1.dp, skin.cardBorder, RoundedCornerShape(12.dp))
+            .padding(horizontal = 14.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text(
             text = label,
-            color = Color(0xFFA5ACB8),
-            fontSize = 12.sp,
-            fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 1.sp
+            color = skin.textSecondary,
+            fontSize = 11.sp,
+            fontFamily = FontFamily.Default,
+            fontWeight = FontWeight.Medium
         )
         Text(
             text = formattedValue,
             color = valueColor,
-            fontSize = 17.sp,
-            fontFamily = FontFamily.Monospace,
+            fontSize = 15.sp,
+            fontFamily = FontFamily.Default,
             fontWeight = FontWeight.Bold
         )
     }
 }
 
+@Composable
+fun PrecisionPillCard(
+    label: String,
+    valueDegrees: Float,
+    skin: AppSkin = AppSkin.CLASSIC_EMERALD
+) {
+    PrecisionPillCard(
+        label = label,
+        valueDegrees = valueDegrees,
+        skin = skin.palette(true)
+    )
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
-// COMPASS ROSE DIAL (60/120 FPS GPU Rendered via graphicsLayer)
+// COCKPIT TELEMETRY DECK (Balanced Telemetry Pod + Distinct Squircle Action Controls)
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+fun CockpitTelemetryDeck(
+    pitch: Float,
+    roll: Float,
+    isBearingLocked: Boolean,
+    onBearingLockToggle: () -> Unit,
+    onSaveNoteClick: () -> Unit,
+    skin: SkinPalette,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        // ── 1. Telemetry Pod (Pitch & Roll Readouts) ──
+        Surface(
+            modifier = Modifier.weight(1f),
+            shape = RoundedCornerShape(16.dp),
+            color = skin.cardBackground,
+            border = androidx.compose.foundation.BorderStroke(1.dp, skin.cardBorder)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceAround
+            ) {
+                // Pitch
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                ) {
+                    Text(
+                        text = "PITCH",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = skin.textSecondary,
+                        fontFamily = FontFamily.Default,
+                        letterSpacing = 0.5.sp
+                    )
+                    Text(
+                        text = String.format(Locale.US, "%+.1f°", pitch),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (abs(pitch) <= 0.6f) skin.primaryAccent else skin.textPrimary,
+                        fontFamily = FontFamily.Default
+                    )
+                }
+
+                // Vertical hairline divider
+                Box(
+                    modifier = Modifier
+                        .width(1.dp)
+                        .height(16.dp)
+                        .background(skin.cardBorder.copy(alpha = 0.8f))
+                )
+
+                // Roll
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                ) {
+                    Text(
+                        text = "ROLL",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = skin.textSecondary,
+                        fontFamily = FontFamily.Default,
+                        letterSpacing = 0.5.sp
+                    )
+                    Text(
+                        text = String.format(Locale.US, "%+.1f°", roll),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (abs(roll) <= 0.6f) skin.primaryAccent else skin.textPrimary,
+                        fontFamily = FontFamily.Default
+                    )
+                }
+            }
+        }
+
+        // ── 2. Distinct Bearing Lock Squircle Control ──
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(
+                    if (isBearingLocked) skin.primaryAccent.copy(alpha = 0.22f)
+                    else skin.cardBackground
+                )
+                .border(
+                    1.dp,
+                    if (isBearingLocked) skin.primaryAccent else skin.cardBorder,
+                    RoundedCornerShape(14.dp)
+                )
+                .clickable { onBearingLockToggle() },
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = if (isBearingLocked) Icons.Default.Lock else Icons.Default.LockOpen,
+                contentDescription = "Lock Heading",
+                tint = if (isBearingLocked) skin.primaryAccent else skin.textPrimary,
+                modifier = Modifier.size(19.dp)
+            )
+        }
+
+        // ── 3. Distinct Save Note Squircle Control ──
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(skin.cardBackground)
+                .border(1.dp, skin.cardBorder, RoundedCornerShape(14.dp))
+                .clickable { onSaveNoteClick() },
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Default.BookmarkAdd,
+                contentDescription = "Save Note",
+                tint = skin.primaryAccent,
+                modifier = Modifier.size(19.dp)
+            )
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPASS ROSE DIAL (Porsche-Inspired Luxury Automotive Instrument)
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
@@ -288,7 +600,8 @@ fun CompassRoseDial(
     pitch: Float,
     roll: Float,
     isLevel: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    skin: SkinPalette
 ) {
     val haptic = LocalHapticFeedback.current
 
@@ -304,52 +617,58 @@ fun CompassRoseDial(
         Paint().apply {
             isAntiAlias = true
             textAlign = Paint.Align.CENTER
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         }
     }
 
     val dialLabels = remember {
         listOf(
             Triple("N", 0.0, true),
-            Triple("30", 30.0, false),
-            Triple("60", 60.0, false),
+            Triple("NE", 45.0, false),
             Triple("E", 90.0, true),
-            Triple("120", 120.0, false),
-            Triple("150", 150.0, false),
+            Triple("SE", 135.0, false),
             Triple("S", 180.0, true),
-            Triple("210", 210.0, false),
-            Triple("240", 240.0, false),
+            Triple("SW", 225.0, false),
             Triple("W", 270.0, true),
-            Triple("300", 300.0, false),
-            Triple("330", 330.0, false)
+            Triple("NW", 315.0, false)
         )
     }
 
-    // Fixed pre-allocated needle path
-    val needlePath = remember { Path() }
-    val glowPath = remember { android.graphics.Path() }
+    val lubberPath = remember { Path() }
 
     Box(
-        modifier = modifier.size(330.dp),
+        modifier = modifier.size(284.dp),
         contentAlignment = Alignment.Center
     ) {
-        // ── 1. Outer Machined Bezel Frame (Floating Modern Glass/Metal Bezel) ──
+        // ── 1. Outer Machined Bezel Frame (Subtle Luxury Bezel) ──
         Canvas(modifier = Modifier.fillMaxSize()) {
             val center = Offset(size.width / 2f, size.height / 2f)
-            val outerRadius = 162.dp.toPx()
-            val bezelRadius = 158.dp.toPx()
+            val outerRadius = 140.dp.toPx()
+            val bezelRadius = 135.dp.toPx()
 
-            // Subtle dark radial gradient for depth
+            // Outer metallic rim
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(Color(0xFF141720), Color(0xFF08090C)),
+                    colors = listOf(skin.dialOuterBezel, skin.surfaceBackground),
                     center = center,
                     radius = outerRadius
                 ),
                 radius = outerRadius,
                 center = center
             )
-            drawCircle(color = BorderSubtle, radius = outerRadius, center = center, style = Stroke(1.dp.toPx()))
-            drawCircle(color = BorderStrong.copy(alpha = 0.6f), radius = bezelRadius, center = center, style = Stroke(0.75.dp.toPx()))
+            // Accent bevel ring
+            drawCircle(
+                color = skin.ringBorder.copy(alpha = if (skin.isDark) 0.5f else 0.35f),
+                radius = outerRadius,
+                center = center,
+                style = Stroke(1.5.dp.toPx())
+            )
+            drawCircle(
+                color = skin.cardBorder,
+                radius = bezelRadius,
+                center = center,
+                style = Stroke(1.dp.toPx())
+            )
         }
 
         // ── 2. Rotating Dial Track (GPU Rotated via graphicsLayer Lambda) ──
@@ -357,7 +676,6 @@ fun CompassRoseDial(
             modifier = Modifier
                 .fillMaxSize()
                 .graphicsLayer {
-                    // This rotation happens entirely in the GPU RenderThread with ZERO recomposition!
                     rotationZ = -heading
                 }
         ) {
@@ -365,32 +683,70 @@ fun CompassRoseDial(
                 val cx = size.width / 2f
                 val cy = size.height / 2f
                 val center = Offset(cx, cy)
-                val trackRadius = 154.dp.toPx()
-                val innerTrackRadius = 126.dp.toPx()
-                val labelRadius = 106.dp.toPx()
+                val trackRadius = 132.dp.toPx()
+                val innerTrackRadius = 110.dp.toPx()
+                val labelRadius = 92.dp.toPx()
 
-                // Tick ring boundary
-                drawCircle(color = BorderSubtle.copy(alpha = 0.7f), radius = trackRadius, center = center, style = Stroke(0.5.dp.toPx()))
-                drawCircle(color = BorderStrong.copy(alpha = 0.5f), radius = innerTrackRadius, center = center, style = Stroke(0.5.dp.toPx()))
+                // Dial face fill
+                drawCircle(
+                    brush = Brush.radialGradient(
+                        colors = listOf(
+                            skin.dialBackground,
+                            skin.dialBackground.copy(alpha = 0.95f)
+                        ),
+                        center = center,
+                        radius = trackRadius
+                    ),
+                    radius = trackRadius,
+                    center = center
+                )
 
-                // Draw precision 360° ticks (every 2 degrees, major at 10, super major at 30)
-                for (i in 0 until 180) {
-                    val deg = i * 2.0
+                // Concentric inner boundary rings
+                drawCircle(
+                    color = skin.ringBorder.copy(alpha = 0.25f),
+                    radius = trackRadius,
+                    center = center,
+                    style = Stroke(1.dp.toPx())
+                )
+                drawCircle(
+                    color = skin.cardBorder.copy(alpha = 0.5f),
+                    radius = innerTrackRadius,
+                    center = center,
+                    style = Stroke(0.8.dp.toPx())
+                )
+
+                // Laser crosshair lines (North-South & East-West)
+                val crossInner = 36.dp.toPx()
+                val crossOuter = innerTrackRadius - 2.dp.toPx()
+                val crossColor = skin.cardBorder.copy(alpha = 0.35f)
+                val crossStroke = 0.75.dp.toPx()
+                drawLine(crossColor, Offset(cx, cy - crossInner), Offset(cx, cy - crossOuter), crossStroke)
+                drawLine(crossColor, Offset(cx, cy + crossInner), Offset(cx, cy + crossOuter), crossStroke)
+                drawLine(crossColor, Offset(cx - crossInner, cy), Offset(cx - crossOuter, cy), crossStroke)
+                drawLine(crossColor, Offset(cx + crossInner, cy), Offset(cx + crossOuter, cy), crossStroke)
+
+                // 360° Precision Ticks (Major 30°, Medium 15°, Micro 3°)
+                for (i in 0 until 120) {
+                    val deg = i * 3.0
                     val rad = Math.toRadians(deg - 90.0)
-                    val isSuperMajor = (i % 15 == 0) // every 30°
-                    val isMajor = (i % 5 == 0)      // every 10°
+                    val isMajor = (i % 10 == 0)      // every 30°
+                    val isMedium = (i % 5 == 0)     // every 15°
 
                     val tickLen = when {
-                        isSuperMajor -> 16.dp.toPx()
-                        isMajor      -> 10.dp.toPx()
-                        else         -> 5.dp.toPx()
+                        isMajor -> 11.dp.toPx()
+                        isMedium -> 7.dp.toPx()
+                        else -> 3.5.dp.toPx()
                     }
                     val tickColor = when {
-                        isSuperMajor -> TextWhite
-                        isMajor      -> Color(0xFFC0C7D5)
-                        else         -> BorderStrong.copy(alpha = 0.7f)
+                        isMajor -> skin.primaryAccent
+                        isMedium -> skin.secondaryAccent
+                        else -> skin.cardBorder.copy(alpha = 0.6f)
                     }
-                    val strokeW = if (isSuperMajor) 1.5.dp.toPx() else 0.75.dp.toPx()
+                    val strokeW = when {
+                        isMajor -> 1.8.dp.toPx()
+                        isMedium -> 1.1.dp.toPx()
+                        else -> 0.75.dp.toPx()
+                    }
 
                     val startX = (cx + (trackRadius - tickLen) * cos(rad)).toFloat()
                     val startY = (cy + (trackRadius - tickLen) * sin(rad)).toFloat()
@@ -405,22 +761,25 @@ fun CompassRoseDial(
                     )
                 }
 
-                // Draw Cardinal & Degree labels using pre-allocated textPaint
+                // Typography for 8 Cardinals & Intercardinals (Google Sans / Default Roboto) - ZERO OVERLAPPING
                 dialLabels.forEach { (label, deg, isCardinal) ->
                     val rad = Math.toRadians(deg - 90.0)
                     val x = (cx + labelRadius * cos(rad)).toFloat()
                     val y = (cy + labelRadius * sin(rad)).toFloat()
 
                     textPaint.textSize = when (label) {
-                        "N" -> 20.sp.toPx()
-                        "E", "S", "W" -> 16.sp.toPx()
-                        else -> 11.sp.toPx()
+                        "N" -> 18.sp.toPx()
+                        "E", "S", "W" -> 14.sp.toPx()
+                        else -> 10.sp.toPx()
                     }
-                    textPaint.typeface = Typeface.create(Typeface.MONOSPACE, if (isCardinal) Typeface.BOLD else Typeface.NORMAL)
+                    textPaint.typeface = Typeface.create(
+                        Typeface.DEFAULT,
+                        if (isCardinal) Typeface.BOLD else Typeface.NORMAL
+                    )
                     textPaint.color = when (label) {
-                        "N" -> android.graphics.Color.parseColor("#FF3B30")
-                        "E", "S", "W" -> android.graphics.Color.WHITE
-                        else -> android.graphics.Color.parseColor("#CBD2E1")
+                        "N" -> skin.needleNorth.toArgb()
+                        "E", "S", "W" -> skin.textPrimary.toArgb()
+                        else -> skin.textSecondary.toArgb()
                     }
 
                     val textY = y - ((textPaint.descent() + textPaint.ascent()) / 2f)
@@ -429,108 +788,169 @@ fun CompassRoseDial(
             }
         }
 
-        // ── 3. Static Precision North Index / Lubber Line (Laser Red) ──────
+        // ── 3. Static 12 O'Clock Precision Lubber Line (Heading Chevron) ──
         Canvas(modifier = Modifier.fillMaxSize()) {
             val cx = size.width / 2f
+            lubberPath.reset()
+            lubberPath.moveTo(cx, 6.dp.toPx())
+            lubberPath.lineTo(cx - 7.dp.toPx(), 19.dp.toPx())
+            lubberPath.lineTo(cx, 16.dp.toPx())
+            lubberPath.lineTo(cx + 7.dp.toPx(), 19.dp.toPx())
+            lubberPath.close()
 
-            // Laser glow behind index
-            drawIntoCanvas { canvas ->
-                val glowPaint = android.graphics.Paint().apply {
-                    isAntiAlias = true
-                    style = android.graphics.Paint.Style.FILL
-                    color = android.graphics.Color.parseColor("#55FF3B30")
-                    maskFilter = android.graphics.BlurMaskFilter(10.dp.toPx(), android.graphics.BlurMaskFilter.Blur.NORMAL)
-                }
-                glowPath.reset()
-                glowPath.moveTo(cx, 4.dp.toPx())
-                glowPath.lineTo(cx - 9.dp.toPx(), 24.dp.toPx())
-                glowPath.lineTo(cx, 19.dp.toPx())
-                glowPath.lineTo(cx + 9.dp.toPx(), 24.dp.toPx())
-                glowPath.close()
-                canvas.nativeCanvas.drawPath(glowPath, glowPaint)
-            }
-
-            needlePath.reset()
-            needlePath.moveTo(cx, 4.dp.toPx())
-            needlePath.lineTo(cx - 8.dp.toPx(), 22.dp.toPx())
-            needlePath.lineTo(cx, 17.dp.toPx())
-            needlePath.lineTo(cx + 8.dp.toPx(), 22.dp.toPx())
-            needlePath.close()
-            drawPath(path = needlePath, color = LaserRed)
+            drawPath(path = lubberPath, color = skin.needleNorth)
+            drawLine(
+                color = Color.White.copy(alpha = 0.9f),
+                start = Offset(cx, 7.dp.toPx()),
+                end = Offset(cx, 15.5.dp.toPx()),
+                strokeWidth = 1.dp.toPx()
+            )
         }
 
-        // ── 4. Center 2D Bullseye Spirit Level (Modern Large Fluid Bubble) ─
-        Canvas(modifier = Modifier.size(136.dp)) {
+        // ── 4. Center Machined Hub & High-Visibility Fluid Leveling Bubble ──
+        Canvas(modifier = Modifier.size(76.dp)) {
             val center = Offset(size.width / 2f, size.height / 2f)
-            val outerRadius = 64.dp.toPx()
-            val snapRadius = 28.dp.toPx()
-            val bubbleRadius = 18.dp.toPx()
+            val outerRadius = 35.dp.toPx()
+            val innerRadius = 28.5.dp.toPx()
+            val snapRadius = 14.dp.toPx()
+            val bubbleRadius = 8.5.dp.toPx()
 
-            // Bezel for center level
+            // Outer machined hub bezel
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(Color(0xFF161A22), Color(0xFF0A0C10)),
+                    colors = listOf(skin.cardElevated, skin.dialOuterBezel),
                     center = center,
                     radius = outerRadius
                 ),
                 radius = outerRadius,
                 center = center
             )
-            drawCircle(color = BorderSubtle, radius = outerRadius, center = center, style = Stroke(1.dp.toPx()))
+            drawCircle(
+                color = skin.cardBorder,
+                radius = outerRadius,
+                center = center,
+                style = Stroke(1.2.dp.toPx())
+            )
 
-            // Snap boundary target
-            val targetColor = if (isLevel) NeonEmerald else BorderStrong
-            drawCircle(color = targetColor, radius = snapRadius, center = center, style = Stroke(1.5.dp.toPx()))
+            // Inner fluid recess
+            drawCircle(
+                color = skin.dialBackground,
+                radius = innerRadius,
+                center = center
+            )
 
-            // Crosshairs through snap circle
+            // Precision Level Target Reticle (Outer Ring + 4 Quadrant Crosshairs)
+            val targetColor = if (isLevel) skin.primaryAccent else skin.cardBorder.copy(alpha = 0.7f)
+            drawCircle(
+                color = targetColor,
+                radius = snapRadius,
+                center = center,
+                style = Stroke(1.2.dp.toPx())
+            )
+
+            // 4 Quadrant Precision Reticle Ticks
+            val tickLen = 4.dp.toPx()
+            val reticleColor = if (isLevel) skin.primaryAccent else skin.cardBorder.copy(alpha = 0.85f)
+            // Left tick
             drawLine(
-                color = targetColor.copy(alpha = 0.5f),
+                color = reticleColor,
                 start = Offset(center.x - snapRadius, center.y),
-                end = Offset(center.x + snapRadius, center.y),
-                strokeWidth = 1.dp.toPx()
+                end = Offset(center.x - snapRadius + tickLen, center.y),
+                strokeWidth = 1.2.dp.toPx()
             )
+            // Right tick
             drawLine(
-                color = targetColor.copy(alpha = 0.5f),
+                color = reticleColor,
+                start = Offset(center.x + snapRadius - tickLen, center.y),
+                end = Offset(center.x + snapRadius, center.y),
+                strokeWidth = 1.2.dp.toPx()
+            )
+            // Top tick
+            drawLine(
+                color = reticleColor,
                 start = Offset(center.x, center.y - snapRadius),
+                end = Offset(center.x, center.y - snapRadius + tickLen),
+                strokeWidth = 1.2.dp.toPx()
+            )
+            // Bottom tick
+            drawLine(
+                color = reticleColor,
+                start = Offset(center.x, center.y + snapRadius - tickLen),
                 end = Offset(center.x, center.y + snapRadius),
-                strokeWidth = 1.dp.toPx()
+                strokeWidth = 1.2.dp.toPx()
             )
 
-            // Neon emerald halo when perfectly level
+            // Center target micro-dot
+            drawCircle(
+                color = if (isLevel) skin.primaryAccent else skin.cardBorder.copy(alpha = 0.6f),
+                radius = 1.5.dp.toPx(),
+                center = center
+            )
+
+            // Level snap radiant halo bloom
             if (isLevel) {
-                drawCircle(color = GlowGreen, radius = snapRadius + 8.dp.toPx(), center = center, style = Stroke(8.dp.toPx()))
+                drawCircle(
+                    color = skin.bubbleGlow,
+                    radius = snapRadius + 5.dp.toPx(),
+                    center = center,
+                    style = Stroke(3.5.dp.toPx())
+                )
             }
 
-            // Liquid bubble position with physics clamp
-            val maxTravel = outerRadius - bubbleRadius - 3.dp.toPx()
-            val offsetX = (roll.coerceIn(-20f, 20f) / 20f * maxTravel)
-            val offsetY = (pitch.coerceIn(-20f, 20f) / 20f * maxTravel)
-            val bubbleCenter = Offset(center.x + offsetX, center.y + offsetY)
+            // Fluid Leveling Bubble (Physics clamp to circular hub interior)
+            val maxTravel = innerRadius - bubbleRadius - 2.dp.toPx()
+            val rawOffsetX = (roll.coerceIn(-20f, 20f) / 14f * maxTravel)
+            val rawOffsetY = (pitch.coerceIn(-20f, 20f) / 14f * maxTravel)
+            val dist = Math.hypot(rawOffsetX.toDouble(), rawOffsetY.toDouble()).toFloat()
+            val scale = if (dist > maxTravel) maxTravel / dist else 1f
+            val dotCenter = Offset(center.x + rawOffsetX * scale, center.y - rawOffsetY * scale)
 
-            // Modern 3D fluid bubble highlight (specular refraction)
+            // 1. Soft fluid luminous aura
             drawCircle(
-                brush = Brush.radialGradient(
-                    colors = listOf(
-                        Color(0xF5FFFFFF), // crisp specular highlight
-                        if (isLevel) Color(0x8800E676) else Color(0x35FFFFFF), // fluid body
-                        Color(0x05FFFFFF)  // transparent edge
-                    ),
-                    center = Offset(bubbleCenter.x - 4.dp.toPx(), bubbleCenter.y - 4.dp.toPx()),
-                    radius = bubbleRadius
-                ),
-                radius = bubbleRadius,
-                center = bubbleCenter
+                color = skin.bubbleGlow,
+                radius = bubbleRadius + 4.dp.toPx(),
+                center = dotCenter
             )
-
-            // Bubble glass rim
+            // 2. High-visibility fluid bubble body
             drawCircle(
-                color = if (isLevel) NeonEmerald else Color(0xD0FFFFFF),
+                color = if (isLevel) skin.primaryAccent else skin.bubbleColor,
                 radius = bubbleRadius,
-                center = bubbleCenter,
-                style = Stroke(2.dp.toPx())
+                center = dotCenter
+            )
+            // 3. Specular gloss highlight (Organic 3D fluid reflection)
+            drawCircle(
+                color = Color.White.copy(alpha = 0.92f),
+                radius = bubbleRadius * 0.42f,
+                center = Offset(dotCenter.x - 2.2.dp.toPx(), dotCenter.y - 2.2.dp.toPx())
+            )
+            // 4. Glass refraction contour rim
+            drawCircle(
+                color = Color.White.copy(alpha = 0.65f),
+                radius = bubbleRadius,
+                center = dotCenter,
+                style = Stroke(1.2.dp.toPx())
             )
         }
     }
+}
+
+@Composable
+fun CompassRoseDial(
+    heading: Float,
+    pitch: Float,
+    roll: Float,
+    isLevel: Boolean,
+    modifier: Modifier = Modifier,
+    skin: AppSkin = AppSkin.CLASSIC_EMERALD
+) {
+    CompassRoseDial(
+        heading = heading,
+        pitch = pitch,
+        roll = roll,
+        isLevel = isLevel,
+        modifier = modifier,
+        skin = skin.palette(true)
+    )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

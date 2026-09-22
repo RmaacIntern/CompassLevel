@@ -51,3 +51,11 @@ val BubbleFluidGreen     = Color(0x4000E676)
 val BannerBg             = Color(0xFF12141A)
 val BannerText           = Color(0xFF555B68)
 val BannerBorder         = Color(0xFF20242E)
+
+// ── Compatibility & HUD Aliases ──────────────────────────────────────────────
+val CardBackground       = CardSurface
+val RedAccent            = LaserRed
+val TextDisabled         = TextDark
+val NeonCyan             = AccentCyan
+val NeonBlue             = AccentBlue
+
