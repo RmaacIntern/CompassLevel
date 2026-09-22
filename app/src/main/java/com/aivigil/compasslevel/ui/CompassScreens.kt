@@ -5,14 +5,19 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -22,17 +27,17 @@ import androidx.compose.ui.unit.sp
 import com.aivigil.compasslevel.ui.theme.*
 import kotlin.math.abs
 import kotlin.math.cos
+import kotlin.math.max
 import kotlin.math.sin
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SCREEN 1 — LOADING
+// SCREEN 1: LOADING (Precision Sensor Initialization)
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
 fun ScreenLoadingView() {
     val infiniteTransition = rememberInfiniteTransition(label = "loading")
 
-    // Spinning arc
     val rotation by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 360f,
@@ -40,11 +45,10 @@ fun ScreenLoadingView() {
         label = "arc_spin"
     )
 
-    // Pulsing glow alpha
     val glowAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.15f,
-        targetValue = 0.45f,
-        animationSpec = infiniteRepeatable(tween(900, easing = FastOutSlowInEasing), RepeatMode.Reverse),
+        initialValue = 0.2f,
+        targetValue = 0.5f,
+        animationSpec = infiniteRepeatable(tween(1000, easing = FastOutSlowInEasing), RepeatMode.Reverse),
         label = "glow_pulse"
     )
 
@@ -52,16 +56,13 @@ fun ScreenLoadingView() {
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        // Radial glow behind spinner
-        Canvas(modifier = Modifier.size(140.dp)) {
+        Canvas(modifier = Modifier.size(160.dp)) {
             drawCircle(
                 brush = Brush.radialGradient(
-                    colors = listOf(
-                        GlowGreen.copy(alpha = glowAlpha),
-                        Color.Transparent
-                    )
+                    colors = listOf(GlowGreen.copy(alpha = glowAlpha), Color.Transparent),
+                    radius = 80.dp.toPx()
                 ),
-                radius = 70.dp.toPx()
+                radius = 80.dp.toPx()
             )
         }
 
@@ -69,30 +70,29 @@ fun ScreenLoadingView() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Spinning arc ring
-            Canvas(modifier = Modifier.size(72.dp)) {
+            Canvas(modifier = Modifier.size(76.dp)) {
                 // Background track
                 drawArc(
                     color = BorderSubtle,
                     startAngle = 0f,
                     sweepAngle = 360f,
                     useCenter = false,
-                    style = Stroke(2.dp.toPx(), cap = StrokeCap.Round)
+                    style = Stroke(2.dp.toPx())
                 )
-                // Green sweep arc
+                // Neon sweep arc
                 drawArc(
-                    color = TargetGreen,
+                    color = NeonEmerald,
                     startAngle = rotation,
-                    sweepAngle = 90f,
+                    sweepAngle = 100f,
                     useCenter = false,
-                    style = Stroke(2.5.dp.toPx(), cap = StrokeCap.Round)
+                    style = Stroke(3.dp.toPx(), cap = StrokeCap.Round)
                 )
-                // Brighter leading dot
-                val leadRad = Math.toRadians((rotation + 90.0))
-                val r = 36.dp.toPx()
+                // Bright leading tip dot
+                val leadRad = Math.toRadians((rotation + 100.0))
+                val r = 38.dp.toPx()
                 drawCircle(
-                    color = TargetGreen,
-                    radius = 3.5.dp.toPx(),
+                    color = Color.White,
+                    radius = 4.dp.toPx(),
                     center = Offset(
                         x = (size.width / 2 + r * cos(leadRad)).toFloat(),
                         y = (size.height / 2 + r * sin(leadRad)).toFloat()
@@ -100,34 +100,38 @@ fun ScreenLoadingView() {
                 )
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
             Text(
-                text = "COMPASS & LEVEL",
-                color = TextWhite,
-                fontSize = 14.sp,
+                text = "CALIBRATING SENSORS",
+                color = TextPrimary,
+                fontSize = 13.sp,
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold,
-                letterSpacing = 3.sp
+                letterSpacing = 2.sp
             )
             Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = "INITIALIZING SENSORS",
-                color = TextMuted,
+                text = "Aligning magnetic & inertial pipeline",
+                color = TextSecondary,
                 fontSize = 11.sp,
-                fontFamily = FontFamily.Monospace,
-                letterSpacing = 1.5.sp
+                fontFamily = FontFamily.Monospace
             )
         }
     }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SCREEN 2 — LIVE COMPASS (main experience)
+// SCREEN 2: LIVE COMPASS (Commercial Precision Instrument)
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-fun ScreenLiveCompassView(heading: Float, pitch: Float, roll: Float) {
+fun ScreenLiveCompassView(
+    heading: Float,
+    pitch: Float,
+    roll: Float,
+    isLevel: Boolean
+) {
     val cardinal = when (heading) {
         in 22.5f..67.5f   -> "NE"
         in 67.5f..112.5f  -> "E"
@@ -140,88 +144,102 @@ fun ScreenLiveCompassView(heading: Float, pitch: Float, roll: Float) {
     }
 
     val isNorth = cardinal == "N"
-    val cardinalBadgeBg = if (isNorth) GlowRed else CardSurface
-    val cardinalTextColor = if (isNorth) NorthRed else TextWhite
 
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // ── Top: Heading readout ───────────────────────────────────────────
+        // ── Top Readout: Heading Number & Cardinal Badge ──────────────────
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(top = 20.dp)
+            modifier = Modifier.padding(top = 16.dp)
         ) {
-            Text(
-                text = "${heading.toInt()}°",
-                fontSize = 80.sp,
-                fontWeight = FontWeight.Bold,
-                color = TextWhite,
-                fontFamily = FontFamily.Monospace
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = "${heading.toInt()}",
+                    fontSize = 72.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextWhite,
+                    fontFamily = FontFamily.Monospace
+                )
+                Text(
+                    text = "°",
+                    fontSize = 36.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = LaserRed,
+                    fontFamily = FontFamily.Monospace
+                )
+            }
 
-            // Cardinal direction badge
+            // Cardinal Badge
             Box(
                 modifier = Modifier
-                    .background(cardinalBadgeBg, RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(if (isNorth) GlowRed else CardSurface)
                     .border(
                         width = 1.dp,
-                        color = if (isNorth) NorthRed else BorderStrong,
+                        color = if (isNorth) LaserRed else BorderStrong,
                         shape = RoundedCornerShape(8.dp)
                     )
-                    .padding(horizontal = 16.dp, vertical = 5.dp)
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
             ) {
                 Text(
                     text = cardinal,
-                    color = cardinalTextColor,
-                    fontSize = 16.sp,
+                    color = if (isNorth) LaserRed else TextPrimary,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = FontFamily.Monospace,
-                    letterSpacing = 3.sp
+                    letterSpacing = 2.sp
                 )
             }
         }
 
-        // ── Center: Compass rose ───────────────────────────────────────────
+        // ── Center Dial: 60/120 FPS Rotating Compass Rose with Level ───────
         CompassRoseDial(
             heading = heading,
-            pitch   = pitch,
-            roll    = roll
+            pitch = pitch,
+            roll = roll,
+            isLevel = isLevel
         )
 
-        // ── Bottom: Pitch & Roll pills ─────────────────────────────────────
+        // ── Bottom: High-Precision Pitch & Roll ────────────────────────────
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(bottom = 20.dp)
+            modifier = Modifier.padding(bottom = 16.dp)
         ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                PillCard(label = "PITCH", value = "${pitch.toInt()}°")
-                PillCard(label = "ROLL",  value = "${roll.toInt()}°")
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                PrecisionPillCard(label = "PITCH", valueDegrees = pitch)
+                PrecisionPillCard(label = "ROLL",  valueDegrees = roll)
             }
         }
     }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SCREEN 3 — LEVEL ONLY (magnetometer absent)
+// SCREEN 3: FULL LEVEL MODE (Dual-Axis Bullseye Reticle)
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-fun ScreenContentView(pitch: Float, roll: Float, isStaticMock: Boolean = false) {
-    val displayPitch = if (isStaticMock) -2f else pitch
-    val displayRoll  = if (isStaticMock) -1f else roll
-    val inclination  = maxOf(abs(displayPitch), abs(displayRoll))
+fun ScreenContentView(
+    pitch: Float,
+    roll: Float,
+    isLevel: Boolean,
+    onTareClick: () -> Unit = {}
+) {
+    val totalInclination = max(abs(pitch), abs(roll))
 
-    // Degree readout color transitions green as it approaches 0
-    val degreeColor by animateColorAsState(
+    val angleColor by animateColorAsState(
         targetValue = when {
-            inclination < 1f  -> TargetGreen
-            inclination < 5f  -> AmberWarning
-            else              -> TextWhite
+            isLevel -> NeonEmerald
+            totalInclination < 3f -> AmberWarning
+            else -> TextWhite
         },
-        animationSpec = tween(400),
-        label = "degColor"
+        animationSpec = tween(200),
+        label = "angleColor"
     )
 
     Column(
@@ -229,40 +247,55 @@ fun ScreenContentView(pitch: Float, roll: Float, isStaticMock: Boolean = false) 
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // ── Top: inclination readout ───────────────────────────────────────
+        // ── Top Readout: Total Inclination & Tare Button ────────────────────
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(top = 20.dp)
+            modifier = Modifier.padding(top = 16.dp)
         ) {
-            Text(
-                text = "${inclination.toInt()}°",
-                fontSize = 80.sp,
-                fontWeight = FontWeight.Bold,
-                color = degreeColor,
-                fontFamily = FontFamily.Monospace
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = String.format("%.1f", totalInclination),
+                    fontSize = 72.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = angleColor,
+                    fontFamily = FontFamily.Monospace
+                )
+                Text(
+                    text = "°",
+                    fontSize = 36.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = angleColor,
+                    fontFamily = FontFamily.Monospace
+                )
+            }
 
             Text(
-                text = "LEVEL ONLY",
-                color = TextMuted,
-                fontSize = 13.sp,
+                text = if (isLevel) "PERFECTLY LEVEL" else "SURFACE INCLINATION",
+                color = if (isLevel) NeonEmerald else TextSecondary,
+                fontSize = 12.sp,
                 fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold,
                 letterSpacing = 1.5.sp
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            // TAP TO ZERO button
+            // Tap to Zero (Tare) Button
             Box(
                 modifier = Modifier
-                    .background(CardSurface, RoundedCornerShape(10.dp))
-                    .border(1.dp, BorderStrong, RoundedCornerShape(10.dp))
-                    .padding(horizontal = 20.dp, vertical = 8.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(CardSurface)
+                    .border(1.dp, if (isLevel) NeonEmerald else BorderStrong, RoundedCornerShape(10.dp))
+                    .clickable { onTareClick() }
+                    .padding(horizontal = 18.dp, vertical = 8.dp)
             ) {
                 Text(
-                    text = "+ TAP TO ZERO",
-                    color = TargetGreen,
-                    fontSize = 12.sp,
+                    text = "+ TARE / ZERO SURFACE",
+                    color = if (isLevel) NeonEmerald else TextPrimary,
+                    fontSize = 11.sp,
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp
@@ -270,42 +303,28 @@ fun ScreenContentView(pitch: Float, roll: Float, isStaticMock: Boolean = false) 
             }
         }
 
-        // ── Center: reticle spirit level ───────────────────────────────────
-        ReticleSpiritLevel(pitch = displayPitch, roll = displayRoll)
+        // ── Center Reticle: Full 2D Spirit Level ───────────────────────────
+        ReticleSpiritLevel(
+            pitch = pitch,
+            roll = roll,
+            isLevel = isLevel
+        )
 
-        // ── Bottom: status + pills ─────────────────────────────────────────
+        // ── Bottom Pills ───────────────────────────────────────────────────
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(bottom = 20.dp)
+            modifier = Modifier.padding(bottom = 16.dp)
         ) {
-            // Magnetometer absent notice
-            Box(
-                modifier = Modifier
-                    .background(CardSurface, RoundedCornerShape(6.dp))
-                    .border(0.5.dp, AmberWarning.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
-                    .padding(horizontal = 12.dp, vertical = 5.dp)
-            ) {
-                Text(
-                    text = "⚠  MAGNETOMETER UNAVAILABLE",
-                    color = AmberWarning,
-                    fontSize = 10.sp,
-                    fontFamily = FontFamily.Monospace,
-                    letterSpacing = 0.5.sp
-                )
-            }
-
-            Spacer(modifier = Modifier.height(14.dp))
-
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                PillCard(label = "PITCH", value = "${displayPitch.toInt()}°")
-                PillCard(label = "ROLL",  value = "${displayRoll.toInt()}°")
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                PrecisionPillCard(label = "PITCH", valueDegrees = pitch)
+                PrecisionPillCard(label = "ROLL",  valueDegrees = roll)
             }
         }
     }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SCREEN — EMPTY (no sensor activity)
+// SCREEN 4: EMPTY SENSOR STATE
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
@@ -317,164 +336,132 @@ fun ScreenEmptyView() {
     ) {
         Box(
             modifier = Modifier
-                .size(76.dp)
-                .background(CardSurface, RoundedCornerShape(20.dp))
-                .border(1.dp, BorderStrong, RoundedCornerShape(20.dp)),
+                .size(72.dp)
+                .clip(RoundedCornerShape(18.dp))
+                .background(CardSurface)
+                .border(1.dp, BorderStrong, RoundedCornerShape(18.dp)),
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "N/A",
-                color = TextMuted,
-                fontSize = 20.sp,
+                text = "IDLE",
+                color = TextSecondary,
+                fontSize = 14.sp,
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold
             )
         }
-        Spacer(modifier = Modifier.height(28.dp))
+        Spacer(modifier = Modifier.height(20.dp))
         Text(
-            text = "NO SENSOR ACTIVITY",
-            color = TextWhite,
-            fontSize = 14.sp,
+            text = "AWAITING SENSOR MOTION",
+            color = TextPrimary,
+            fontSize = 13.sp,
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Bold,
-            letterSpacing = 1.5.sp
+            letterSpacing = 1.sp
         )
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Device sensors are idle or waiting\nfor motion input.",
+            text = "Pick up or rotate your device to initiate reading",
             color = TextMuted,
             fontSize = 12.sp,
             textAlign = TextAlign.Center,
-            lineHeight = 19.sp,
             fontFamily = FontFamily.Monospace
         )
     }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// SCREEN 4 — ERROR / CALIBRATION NEEDED
+// SCREEN 5: ERROR / CALIBRATION MODAL
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-fun ScreenErrorView() {
+fun ScreenErrorView(
+    onDismiss: () -> Unit = {}
+) {
     val infiniteTransition = rememberInfiniteTransition(label = "error_pulse")
-
-    // Pulsing ring alpha
-    val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.2f,
-        targetValue  = 0.7f,
-        animationSpec = infiniteRepeatable(tween(900, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "amber_pulse"
-    )
-    // Pulsing ring scale
     val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 1.0f,
-        targetValue  = 1.15f,
+        initialValue = 1f,
+        targetValue = 1.15f,
         animationSpec = infiniteRepeatable(tween(900, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "scale_pulse"
+        label = "pulseScale"
     )
 
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Pulsing amber ring around warning icon
-        Box(contentAlignment = Alignment.Center) {
-            Canvas(modifier = Modifier.size(100.dp)) {
-                // Pulsing outer glow ring
+        Box(
+            modifier = Modifier.size(90.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
                 drawCircle(
-                    color = AmberWarning.copy(alpha = pulseAlpha * 0.3f),
-                    radius = (46.dp * pulseScale).toPx(),
-                    style = Stroke(12.dp.toPx())
-                )
-                // Static inner ring
-                drawCircle(
-                    color = AmberWarning.copy(alpha = 0.25f),
-                    radius = 36.dp.toPx(),
-                    style = Stroke(1.5.dp.toPx())
+                    color = GlowAmber,
+                    radius = (40.dp * pulseScale).toPx(),
+                    style = Stroke(8.dp.toPx())
                 )
             }
 
-            // Warning icon exclamation
             Box(
                 modifier = Modifier
-                    .size(56.dp)
-                    .background(
-                        brush = Brush.radialGradient(
-                            listOf(GlowAmber, Color.Transparent)
-                        ),
-                        shape = androidx.compose.foundation.shape.CircleShape
-                    ),
+                    .size(54.dp)
+                    .clip(CircleShape)
+                    .background(AmberWarning),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = "!",
-                    color = AmberWarning,
-                    fontSize = 32.sp,
+                    color = Color.Black,
+                    fontSize = 28.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = FontFamily.Monospace
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // CALIBRATION NEEDED badge
-        Box(
-            modifier = Modifier
-                .background(GlowAmberSoft, RoundedCornerShape(8.dp))
-                .border(1.dp, AmberWarning, RoundedCornerShape(8.dp))
-                .padding(horizontal = 16.dp, vertical = 7.dp)
-        ) {
-            Text(
-                text = "CALIBRATION NEEDED",
-                color = AmberWarning,
-                fontSize = 12.sp,
-                fontFamily = FontFamily.Monospace,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.5.sp
-            )
-        }
-
         Spacer(modifier = Modifier.height(20.dp))
 
         Text(
-            text = "MAGNETIC INTERFERENCE\nDETECTED",
-            color = TextWhite,
+            text = "MAGNETIC INTERFERENCE",
+            color = TextPrimary,
             fontSize = 15.sp,
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Center,
-            letterSpacing = 1.sp,
-            lineHeight = 24.sp
+            letterSpacing = 1.5.sp
         )
 
-        Spacer(modifier = Modifier.height(14.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-        // Figure-8 instruction
+        Text(
+            text = "Nearby metallic objects or cases may distort accuracy.\nWave your device in a figure-8 motion to recalibrate.",
+            color = TextSecondary,
+            fontSize = 12.sp,
+            textAlign = TextAlign.Center,
+            lineHeight = 18.sp,
+            fontFamily = FontFamily.Monospace
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
         Box(
             modifier = Modifier
-                .background(CardSurface, RoundedCornerShape(10.dp))
-                .border(0.5.dp, BorderStrong, RoundedCornerShape(10.dp))
-                .padding(horizontal = 20.dp, vertical = 12.dp)
+                .clip(RoundedCornerShape(10.dp))
+                .background(CardSurface)
+                .border(1.dp, BorderStrong, RoundedCornerShape(10.dp))
+                .clickable { onDismiss() }
+                .padding(horizontal = 24.dp, vertical = 10.dp)
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = "∞",
-                    color = AmberWarning,
-                    fontSize = 32.sp
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Wave phone in a figure-8\npattern to recalibrate",
-                    color = TextMuted,
-                    fontSize = 12.sp,
-                    textAlign = TextAlign.Center,
-                    lineHeight = 18.sp,
-                    fontFamily = FontFamily.Monospace
-                )
-            }
+            Text(
+                text = "CONTINUE ANYWAY",
+                color = TextPrimary,
+                fontSize = 12.sp,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp
+            )
         }
     }
 }

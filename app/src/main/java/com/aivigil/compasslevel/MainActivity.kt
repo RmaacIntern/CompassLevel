@@ -1,4 +1,4 @@
-﻿package com.aivigil.compasslevel
+package com.aivigil.compasslevel
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -22,12 +22,9 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             CompassLevelTheme {
-                var selectedTab by remember { mutableStateOf("Live") }
-                val heading by sensorManager.headingFlow.collectAsState()
-                val pitch by sensorManager.pitchFlow.collectAsState()
-                val roll by sensorManager.rollFlow.collectAsState()
-                val isReliable by sensorManager.isReliable.collectAsState()
-                val hasMagnetometer = sensorManager.hasMagnetometer
+                val sensorState by sensorManager.compassState.collectAsState()
+                var currentMode by remember { mutableStateOf("Compass") }
+                var showCalibrationModal by remember { mutableStateOf(false) }
 
                 Column(
                     modifier = Modifier
@@ -36,10 +33,14 @@ class MainActivity : ComponentActivity() {
                         .statusBarsPadding()
                         .navigationBarsPadding()
                 ) {
-                    TopActionBar()
-                    StateSelectorBar(
-                        selectedTab = selectedTab,
-                        onTabSelected = { selectedTab = it }
+                    TopActionBar(
+                        isReliable = sensorState.isReliable,
+                        onCalibrateClick = { showCalibrationModal = true }
+                    )
+
+                    SegmentedModeSelector(
+                        selectedMode = currentMode,
+                        onModeSelected = { currentMode = it }
                     )
 
                     Box(
@@ -47,16 +48,34 @@ class MainActivity : ComponentActivity() {
                             .weight(1f)
                             .fillMaxWidth()
                     ) {
-                        when (selectedTab) {
-                            "Loading" -> ScreenLoadingView()
-                            "Content" -> ScreenContentView(pitch = -2f, roll = -1f, isStaticMock = true)
-                            "Empty" -> ScreenEmptyView()
-                            "Error" -> ScreenErrorView()
-                            else -> {
-                                when {
-                                    !hasMagnetometer -> ScreenContentView(pitch = pitch, roll = roll, isStaticMock = false)
-                                    !isReliable -> ScreenErrorView()
-                                    else -> ScreenLiveCompassView(heading = heading, pitch = pitch, roll = roll)
+                        if (showCalibrationModal) {
+                            ScreenErrorView(onDismiss = { showCalibrationModal = false })
+                        } else {
+                            when (currentMode) {
+                                "Level" -> {
+                                    ScreenContentView(
+                                        pitch = sensorState.pitch,
+                                        roll = sensorState.roll,
+                                        isLevel = sensorState.isLevel,
+                                        onTareClick = { sensorManager.tare() }
+                                    )
+                                }
+                                else -> {
+                                    if (!sensorManager.hasMagnetometer) {
+                                        ScreenContentView(
+                                            pitch = sensorState.pitch,
+                                            roll = sensorState.roll,
+                                            isLevel = sensorState.isLevel,
+                                            onTareClick = { sensorManager.tare() }
+                                        )
+                                    } else {
+                                        ScreenLiveCompassView(
+                                            heading = sensorState.heading,
+                                            pitch = sensorState.pitch,
+                                            roll = sensorState.roll,
+                                            isLevel = sensorState.isLevel
+                                        )
+                                    }
                                 }
                             }
                         }
