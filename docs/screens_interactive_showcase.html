@@ -2,352 +2,778 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Compass & Level — Market UI Showcase</title>
-  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <title>Compass & Level — Market UI Showcase & Interactive Prototype</title>
   <style>
-    @keyframes spinArc {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
+    /* Reset & Base Styles */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: #060709;
+      color: #FFFFFF;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.5;
+      padding: 24px;
+      min-height: 100vh;
     }
-    .pulse-glow {
-      animation: pulseGlow 1.8s infinite ease-in-out;
+    a { text-decoration: none; transition: opacity 0.2s; }
+    a:hover { opacity: 0.85; }
+
+    /* Layout Containers */
+    .container { max-width: 1200px; margin: 0 auto; }
+    .flex { display: flex; }
+    .flex-col { flex-direction: column; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .justify-center { justify-content: center; }
+    .gap-2 { gap: 8px; }
+    .gap-3 { gap: 12px; }
+    .gap-4 { gap: 16px; }
+    .gap-6 { gap: 24px; }
+    .gap-8 { gap: 32px; }
+
+    /* Top Navigation Banner with Clickable Links */
+    .nav-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: #0d0f15;
+      border: 1px solid #1f2432;
+      border-radius: 12px;
+      padding: 12px 18px;
+      margin-bottom: 24px;
     }
-    @keyframes pulseGlow {
-      0%, 100% { transform: scale(1); opacity: 0.3; }
-      50% { transform: scale(1.15); opacity: 0.7; }
+    .nav-links { display: flex; flex-wrap: wrap; gap: 10px; }
+    .nav-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      font-family: monospace;
+      border: 1px solid transparent;
     }
-    .dial-transition {
-      transition: transform 0.15s cubic-bezier(0.1, 0.9, 0.2, 1);
+    .link-org { background: rgba(0, 230, 118, 0.12); color: #00E676; border-color: rgba(0, 230, 118, 0.3); }
+    .link-personal { background: rgba(0, 229, 255, 0.12); color: #00E5FF; border-color: rgba(0, 229, 255, 0.3); }
+    .link-competitor { background: rgba(255, 171, 0, 0.12); color: #FFAB00; border-color: rgba(255, 171, 0, 0.3); }
+    .link-postmortem { background: rgba(179, 136, 255, 0.12); color: #B388FF; border-color: rgba(179, 136, 255, 0.3); }
+    .link-qa { background: rgba(255, 64, 129, 0.12); color: #FF4081; border-color: rgba(255, 64, 129, 0.3); }
+
+    /* Header */
+    .header-border {
+      border-bottom: 1px solid #1a1e29;
+      padding-bottom: 20px;
+      margin-bottom: 28px;
+    }
+    .badge-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #00E676;
+      box-shadow: 0 0 10px #00E676;
+      display: inline-block;
+    }
+    .badge-label {
+      font-size: 11px;
+      font-family: monospace;
+      letter-spacing: 1.5px;
+      color: #00E676;
+      font-weight: 700;
+    }
+    .title-main {
+      font-size: 26px;
+      font-weight: 800;
+      color: #FFFFFF;
+      letter-spacing: -0.5px;
+      margin-top: 4px;
+    }
+    .meta-tag { font-size: 12px; font-family: monospace; color: #8e95a5; }
+    .device-verified { font-size: 12px; font-family: monospace; color: #00E676; font-weight: 600; margin-top: 2px; }
+
+    /* Competitor Benchmark Cards Grid */
+    .grid-competitors {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .card {
+      background: #101217;
+      border: 1px solid #1e222d;
+      border-radius: 14px;
+      padding: 16px;
+    }
+    .card-our-app {
+      background: linear-gradient(180deg, #10151f 0%, #0c0f16 100%);
+      border: 1px solid rgba(0, 230, 118, 0.4);
+      box-shadow: 0 0 20px rgba(0, 230, 118, 0.08);
+    }
+    .card-title-sm {
+      font-size: 11px;
+      font-family: monospace;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    .card-h3 { font-size: 15px; font-weight: 700; color: #FFFFFF; margin-bottom: 8px; }
+    .card-body { font-size: 12px; color: #9aa2b4; line-height: 1.6; }
+    .text-green { color: #00E676; }
+    .text-red { color: #FF3B30; }
+    .text-amber { color: #FFAB00; }
+    .text-cyan { color: #00E5FF; }
+
+    /* Interactive Showcase Section */
+    .main-showcase {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 32px;
+    }
+    @media (min-width: 900px) {
+      .main-showcase { flex-direction: row; align-items: flex-start; justify-content: center; }
+    }
+
+    /* Phone Device Frame */
+    .phone-chassis {
+      width: 360px;
+      height: 750px;
+      background: #000000;
+      border: 8px solid #222633;
+      border-radius: 48px;
+      box-shadow: 0 25px 70px rgba(0, 0, 0, 0.95), 0 0 0 1px #31374a;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .speaker-notch {
+      width: 120px;
+      height: 16px;
+      background: #141720;
+      border-bottom-left-radius: 14px;
+      border-bottom-right-radius: 14px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+    }
+    .speaker-slot { width: 44px; height: 4px; background: #2b3040; border-radius: 2px; }
+
+    /* Phone Internal Top Bar */
+    .phone-top-bar {
+      padding: 10px 18px 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #161922;
+      background: #08090d;
+    }
+    .btn-settings {
+      font-size: 10px;
+      font-family: monospace;
+      font-weight: 700;
+      color: #a0a6b8;
+      background: #151821;
+      border: 1px solid #282d3d;
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .btn-settings:hover { color: #FFFFFF; border-color: #00E676; }
+
+    /* Segmented Navigation Bar */
+    .mode-switch-wrapper { padding: 8px 18px; background: #000000; }
+    .mode-switch-bg {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      padding: 3px;
+      background: #12151d;
+      border: 1px solid #1e2330;
+      border-radius: 12px;
+    }
+    .btn-mode {
+      padding: 7px 0;
+      font-size: 11px;
+      font-family: monospace;
+      font-weight: 700;
+      border: none;
+      border-radius: 9px;
+      cursor: pointer;
+      background: transparent;
+      color: #7d8597;
+      transition: all 0.2s;
+    }
+    .btn-mode.active {
+      background: #202635;
+      color: #FFFFFF;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Phone Screen Content */
+    .phone-screen {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 8px 16px 12px;
+      position: relative;
+    }
+
+    /* Heading Text Display */
+    .heading-box { text-align: center; margin-top: 4px; }
+    .heading-val { font-size: 64px; font-weight: 800; font-family: monospace; color: #FFFFFF; letter-spacing: -2px; line-height: 1; }
+    .heading-deg { font-size: 32px; font-weight: 700; color: #FF3B30; margin-left: 2px; }
+    .cardinal-badge {
+      display: inline-block;
+      margin-top: 4px;
+      background: #141720;
+      border: 1px solid #2a3040;
+      color: #CBD2E1;
+      padding: 2px 14px;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 2px;
+    }
+
+    /* 330dp Dial Styling */
+    .dial-container {
+      position: relative;
+      width: 270px;
+      height: 270px;
+      margin: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .dial-bezel {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 2px solid #202635;
+      background: radial-gradient(circle, #0e1118 0%, #050608 100%);
+      box-shadow: inset 0 0 25px rgba(0, 0, 0, 0.9), 0 0 15px rgba(0, 0, 0, 0.6);
+    }
+    .dial-rotator {
+      position: absolute;
+      inset: 6px;
+      border-radius: 50%;
+      transition: transform 0.12s cubic-bezier(0.1, 0.9, 0.2, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Center Fluid Spirit Level (136dp scaled) */
+    .center-level {
+      position: absolute;
+      width: 104px;
+      height: 104px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #101522 0%, #080a10 100%);
+      border: 1.5px solid #2a3144;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 16px rgba(0, 0, 0, 0.8);
+      z-index: 10;
+    }
+    .level-aura {
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      border: 2px solid #00E676;
+      box-shadow: 0 0 15px #00E676;
+      opacity: 0.85;
+      animation: pulseAura 1.8s infinite ease-in-out;
+      display: none;
+    }
+    @keyframes pulseAura {
+      0%, 100% { transform: scale(1); opacity: 0.6; }
+      50% { transform: scale(1.04); opacity: 1; }
+    }
+    .fluid-bubble {
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #ffffff 0%, #76ff03 45%, #00c853 100%);
+      box-shadow: 0 0 12px rgba(118, 255, 3, 0.8), inset 0 0 4px rgba(255, 255, 255, 0.9);
+      transition: transform 0.08s ease-out;
+    }
+
+    /* Top Red Pointer Needle */
+    .pointer-needle {
+      position: absolute;
+      top: -6px;
+      width: 0;
+      height: 0;
+      border-left: 7px solid transparent;
+      border-right: 7px solid transparent;
+      border-top: 14px solid #FF3B30;
+      filter: drop-shadow(0 0 6px #FF3B30);
+      z-index: 25;
+    }
+
+    /* Metric Pills (Pitch / Roll) */
+    .pills-row {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    .pill {
+      background: #11141c;
+      border: 1px solid #222838;
+      padding: 5px 14px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      gap: 6px;
+      color: #CBD2E1;
+    }
+
+    /* Ad Container (Isolated 50dp) */
+    .ad-container {
+      height: 50px;
+      background: #0d0f15;
+      border: 1px dashed #282f42;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: monospace;
+      font-size: 11px;
+      color: #6a7285;
+    }
+
+    /* Interactive Controls Panel */
+    .controls-panel {
+      max-width: 440px;
+      width: 100%;
+      background: #0e1118;
+      border: 1px solid #1f2533;
+      border-radius: 20px;
+      padding: 24px;
+    }
+    .control-group { margin-bottom: 20px; }
+    .control-label {
+      display: flex;
+      justify-content: space-between;
+      font-family: monospace;
+      font-size: 12px;
+      font-weight: 700;
+      color: #CBD2E1;
+      margin-bottom: 8px;
+    }
+    input[type=range] {
+      width: 100%;
+      accent-color: #00E676;
+      height: 6px;
+      background: #202638;
+      border-radius: 4px;
+      outline: none;
+    }
+    .state-btn-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 14px;
+    }
+    .btn-state {
+      padding: 10px;
+      font-size: 11px;
+      font-family: monospace;
+      font-weight: 700;
+      background: #161a25;
+      border: 1px solid #272e42;
+      border-radius: 8px;
+      color: #CBD2E1;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-state:hover { background: #22293b; color: #FFFFFF; border-color: #00E676; }
+    .btn-state.active-state { background: rgba(0, 230, 118, 0.2); border-color: #00E676; color: #00E676; }
+
+    /* Modal Overlay (Settings & Calibration) */
+    .modal-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.88);
+      backdrop-filter: blur(6px);
+      z-index: 100;
+      display: none;
+      flex-direction: column;
+      padding: 24px 18px;
+    }
+    .modal-title { font-size: 16px; font-weight: 800; font-family: monospace; color: #FFFFFF; margin-bottom: 16px; }
+    .setting-item {
+      background: #10131c;
+      border: 1px solid #202638;
+      border-radius: 10px;
+      padding: 12px;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    .btn-done {
+      margin-top: auto;
+      background: #00E676;
+      color: #000000;
+      font-weight: 800;
+      font-family: monospace;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      text-align: center;
     }
   </style>
 </head>
-<body class="bg-[#060709] text-white font-sans antialiased p-6 min-h-screen">
-  <div class="max-w-6xl mx-auto">
-    <!-- Header -->
-    <div class="flex items-center justify-between border-b border-gray-800 pb-5 mb-8">
-      <div>
-        <div class="flex items-center gap-2 mb-1">
-          <span class="inline-block w-2.5 h-2.5 rounded-full bg-[#00E676] shadow-[0_0_8px_#00E676]"></span>
-          <span class="text-xs font-mono tracking-widest text-[#00E676] font-bold">MARKET COMPETITIVE BENCHMARK & UI</span>
-        </div>
-        <h1 class="text-2xl font-bold tracking-tight text-white font-mono">Compass & Level (App A) — Production Outlook</h1>
+<body>
+
+  <div class="container">
+    <!-- Top Connected Links Bar -->
+    <div class="nav-bar">
+      <div style="font-size: 12px; font-family: monospace; font-weight: 700; color: #8e95a5;">
+        CONNECTIVITY & REPO LINKS:
       </div>
-      <div class="text-right">
-        <span class="text-xs font-mono text-gray-400">Target SDK 36 • Android 16</span>
-        <div class="text-xs font-mono text-[#00E676] mt-0.5">● Tested on Vivo Y27s & Samsung Galaxy A06</div>
+      <div class="nav-links">
+        <a href="https://github.com/RmaacIntern/CompassLevel" target="_blank" class="nav-link link-org">
+          <span style="width: 7px; height: 7px; border-radius: 50%; background: #00E676;"></span>
+          GitHub Org (RmaacIntern)
+        </a>
+        <a href="https://github.com/riz5y/CompassLevel" target="_blank" class="nav-link link-personal">
+          <span style="width: 7px; height: 7px; border-radius: 50%; background: #00E5FF;"></span>
+          GitHub Personal (riz5y)
+        </a>
+        <a href="../COMPETITOR-RESEARCH.md" class="nav-link link-competitor">
+          <span>📊</span> Competitor Research Dossier
+        </a>
+        <a href="../POST-MORTEM.md" class="nav-link link-postmortem">
+          <span>📋</span> Master Post-Mortem
+        </a>
+        <a href="../QA-REPORT.md" class="nav-link link-qa">
+          <span>📱</span> Dual Device QA Report
+        </a>
+      </div>
+    </div>
+
+    <!-- Header Section -->
+    <div class="flex items-center justify-between header-border">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="badge-dot"></span>
+          <span class="badge-label">MARKET COMPETITIVE BENCHMARK & UI</span>
+        </div>
+        <h1 class="title-main">Compass & Level — Production Interactive Prototype</h1>
+      </div>
+      <div style="text-align: right;">
+        <div class="meta-tag">Target SDK 36 • Android 16 • 100% Offline</div>
+        <div class="device-verified">● Verified: Vivo Y27s & Samsung Galaxy A06</div>
       </div>
     </div>
 
     <!-- Competitor Breakdown Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-      <div class="bg-[#101217] border border-gray-800/80 rounded-xl p-4 shadow-sm">
-        <div class="text-xs font-mono text-amber-400 font-semibold mb-1">COMPETITOR #1 (50M+ Downloads)</div>
-        <h3 class="text-sm font-bold text-gray-200">Digital Compass by Axiomatic</h3>
-        <p class="text-xs text-gray-400 mt-2 leading-relaxed">
-          <b class="text-gray-300">Outlook:</b> High contrast monochrome, but flat 2D lines. <br>
-          <b class="text-red-400">Flaw:</b> Frequent needle flipping across North (359° ↔ 0°); aggressive pop-up video ads during navigation.
+    <div class="grid-competitors">
+      <div class="card">
+        <div class="card-title-sm text-amber">COMPETITOR #1 (50M+ Downloads)</div>
+        <h3 class="card-h3">Digital Compass by Axiomatic</h3>
+        <p class="card-body">
+          <b style="color: #FFFFFF;">Outlook:</b> Flat 2D monochrome dial.<br>
+          <span class="text-red"><b>Critical Flaws:</b> $358^\circ$ reverse needle flip crossing North; aggressive full-screen video ads; requires GPS permission.</span>
         </p>
       </div>
 
-      <div class="bg-[#101217] border border-gray-800/80 rounded-xl p-4 shadow-sm">
-        <div class="text-xs font-mono text-cyan-400 font-semibold mb-1">COMPETITOR #2 (10M+ Downloads)</div>
-        <h3 class="text-sm font-bold text-gray-200">Bubble Level by Gamma Play</h3>
-        <p class="text-xs text-gray-400 mt-2 leading-relaxed">
-          <b class="text-gray-300">Outlook:</b> Dated yellow/green tube hardware skeuomorphism. <br>
-          <b class="text-red-400">Flaw:</b> Cluttered with rulers/protractors; lacks integrated compass; slow frame rates.
+      <div class="card">
+        <div class="card-title-sm text-cyan">COMPETITOR #2 (10M+ Downloads)</div>
+        <h3 class="card-h3">Galaxy Compass</h3>
+        <p class="card-body">
+          <b style="color: #FFFFFF;">Outlook:</b> Samsung One UI skeuomorphism.<br>
+          <span class="text-red"><b>Critical Flaws:</b> Cluttered with weather/moon bloat; View Canvas rendering lag (35–45fps); no simultaneous level; no camera bump tare.</span>
         </p>
       </div>
 
-      <div class="bg-[#101217] border border-[#00E676]/30 rounded-xl p-4 shadow-sm bg-gradient-to-b from-[#10141a] to-[#0c0e12]">
-        <div class="text-xs font-mono text-[#00E676] font-semibold mb-1">OUR APP (CompassLevel)</div>
-        <h3 class="text-sm font-bold text-white">Precision Tactical Instrument</h3>
-        <p class="text-xs text-gray-300 mt-2 leading-relaxed">
-          <b class="text-white">Outlook:</b> 330dp obsidian metallic dial, 18dp 3D fluid bubble, 76sp readout, haptic snap at ±0.5°, 1-tap tare calibration over camera bumps.
+      <div class="card card-our-app">
+        <div class="card-title-sm text-green">OUR APP (CompassLevel)</div>
+        <h3 class="card-h3">Tactical Dual Instrument</h3>
+        <p class="card-body">
+          <b style="color: #FFFFFF;">Outlook:</b> 330dp obsidian metallic dial, 18dp 3D fluid bubble, 76sp readout.<br>
+          <span class="text-green"><b>Advantages:</b> 60fps GPU pipeline, $((\Delta+540)\%360)-180$ seamless North wrap, Heading-Hold buffer, 1-tap Tare, zero permissions.</span>
         </p>
       </div>
     </div>
 
-    <!-- Interactive Mobile Frame Showcase -->
-    <div class="flex flex-col lg:flex-row gap-8 items-start justify-center">
-      <!-- Phone Mockup Device -->
-      <div class="w-[360px] h-[740px] bg-black border-[6px] border-[#222631] rounded-[48px] shadow-[0_20px_60px_rgba(0,0,0,0.9)] overflow-hidden flex flex-col relative mx-auto shrink-0">
-        <!-- Top Speaker Notch -->
-        <div class="w-28 h-4 bg-[#14161d] rounded-b-xl mx-auto flex items-center justify-center z-50">
-          <div class="w-10 h-1 bg-[#282d3b] rounded-full"></div>
-        </div>
+    <!-- Interactive Simulator Area -->
+    <div class="main-showcase">
+
+      <!-- Physical Mobile Frame -->
+      <div class="phone-chassis">
+        <!-- Notch -->
+        <div class="speaker-notch"><div class="speaker-slot"></div></div>
 
         <!-- Phone Top Bar -->
-        <div class="px-5 pt-3 pb-2 flex items-center justify-between border-b border-[#1f232d] bg-[#0a0c10]">
+        <div class="phone-top-bar">
           <div class="flex items-center gap-2">
-            <span class="w-2 h-2 rounded-full bg-[#00E676]"></span>
-            <span class="text-[11px] font-mono font-bold tracking-wider text-gray-200">COMPASS & LEVEL</span>
+            <span style="width: 8px; height: 8px; border-radius: 50%; background: #00E676;"></span>
+            <span style="font-size: 11px; font-family: monospace; font-weight: 700; color: #CBD2E1;">COMPASS & LEVEL</span>
           </div>
-          <button id="btnSettings" class="text-[10px] font-mono font-bold text-gray-400 bg-[#161922] px-2.5 py-1 rounded border border-[#2a2f3d] hover:text-white">
-            ⚙ SETTINGS
-          </button>
+          <button id="btnSettings" class="btn-settings">⚙ SETTINGS</button>
         </div>
 
         <!-- Mode Switcher -->
-        <div class="px-5 py-2.5 bg-black">
-          <div class="grid grid-cols-2 p-1 bg-[#14171e] rounded-xl border border-[#202530] text-center">
-            <button id="tabCompass" class="py-1.5 text-xs font-mono font-bold rounded-lg bg-[#1f2430] text-white shadow-sm transition">COMPASS</button>
-            <button id="tabLevel" class="py-1.5 text-xs font-mono font-bold rounded-lg text-gray-400 hover:text-white transition">SPIRIT LEVEL</button>
+        <div class="mode-switch-wrapper">
+          <div class="mode-switch-bg">
+            <button id="tabCompass" class="btn-mode active">COMPASS</button>
+            <button id="tabLevel" class="btn-mode">SPIRIT LEVEL</button>
           </div>
         </div>
 
         <!-- Screen Container -->
-        <div class="flex-1 relative overflow-hidden flex flex-col justify-between px-4 pb-2">
-          <!-- COMPASS VIEW -->
-          <div id="viewCompass" class="flex-1 flex flex-col justify-between items-center py-2 transition-opacity duration-200">
-            <!-- Heading -->
-            <div class="text-center">
-              <div class="flex items-baseline justify-center font-mono">
-                <span id="headingDisplay" class="text-6xl font-bold text-white tracking-tighter">324</span>
-                <span class="text-3xl font-bold text-[#FF3B30] ml-0.5">°</span>
-              </div>
-              <div id="cardinalBadge" class="inline-block mt-1 bg-[#1b1f28] border border-[#2d3342] text-gray-200 px-3.5 py-0.5 rounded-md font-mono text-xs font-bold tracking-widest">
-                NW
-              </div>
+        <div class="phone-screen">
+          <!-- Heading Readout -->
+          <div class="heading-box">
+            <div class="flex items-center justify-center">
+              <span id="headingDisplay" class="heading-val">324</span>
+              <span class="heading-deg">°</span>
+            </div>
+            <div id="cardinalBadge" class="cardinal-badge">NW</div>
+          </div>
+
+          <!-- 330dp Compass Dial & Level -->
+          <div class="dial-container">
+            <div class="dial-bezel"></div>
+            <div class="pointer-needle"></div>
+
+            <!-- Rotating Dial Track -->
+            <div id="dialRing" class="dial-rotator">
+              <svg viewBox="0 0 240 240" style="width: 100%; height: 100%;">
+                <circle cx="120" cy="120" r="110" fill="none" stroke="#252c3d" stroke-width="1.5"/>
+                <circle cx="120" cy="120" r="92" fill="none" stroke="#1c2230" stroke-width="1"/>
+                <!-- Cardinals -->
+                <text x="120" y="30" fill="#FF3B30" font-size="15" font-weight="900" font-family="monospace" text-anchor="middle">N</text>
+                <text x="214" y="125" fill="#FFFFFF" font-size="13" font-weight="800" font-family="monospace" text-anchor="middle">E</text>
+                <text x="120" y="220" fill="#FFFFFF" font-size="13" font-weight="800" font-family="monospace" text-anchor="middle">S</text>
+                <text x="26" y="125" fill="#FFFFFF" font-size="13" font-weight="800" font-family="monospace" text-anchor="middle">W</text>
+                <!-- 30 deg labels -->
+                <text x="168" y="44" fill="#8e97ab" font-size="9" font-family="monospace" text-anchor="middle">30</text>
+                <text x="204" y="80" fill="#8e97ab" font-size="9" font-family="monospace" text-anchor="middle">60</text>
+                <text x="204" y="170" fill="#8e97ab" font-size="9" font-family="monospace" text-anchor="middle">120</text>
+                <text x="168" y="206" fill="#8e97ab" font-size="9" font-family="monospace" text-anchor="middle">150</text>
+                <text x="72" y="206" fill="#8e97ab" font-size="9" font-family="monospace" text-anchor="middle">210</text>
+                <text x="36" y="170" fill="#8e97ab" font-size="9" font-family="monospace" text-anchor="middle">240</text>
+                <text x="36" y="80" fill="#8e97ab" font-size="9" font-family="monospace" text-anchor="middle">300</text>
+                <text x="72" y="44" fill="#8e97ab" font-size="9" font-family="monospace" text-anchor="middle">330</text>
+              </svg>
             </div>
 
-            <!-- Compass Dial (Interactive) -->
-            <div class="relative w-[260px] h-[260px] flex items-center justify-center my-auto">
-              <!-- Outer Bezel -->
-              <div class="absolute inset-0 rounded-full border border-[#252a38] bg-gradient-to-b from-[#141720] to-[#08090c] shadow-inner"></div>
-
-              <!-- Rotating Track -->
-              <div id="dialRing" class="absolute inset-2 rounded-full border border-gray-800/60 dial-transition flex items-center justify-center">
-                <!-- SVG Dial Markings -->
-                <svg viewBox="0 0 240 240" class="w-full h-full">
-                  <!-- Cardinal texts -->
-                  <text x="120" y="32" fill="#FF3B30" font-size="14" font-weight="bold" font-family="monospace" text-anchor="middle">N</text>
-                  <text x="210" y="125" fill="#FFFFFF" font-size="12" font-weight="bold" font-family="monospace" text-anchor="middle">E</text>
-                  <text x="120" y="218" fill="#FFFFFF" font-size="12" font-weight="bold" font-family="monospace" text-anchor="middle">S</text>
-                  <text x="30" y="125" fill="#FFFFFF" font-size="12" font-weight="bold" font-family="monospace" text-anchor="middle">W</text>
-                  <!-- 30 deg labels -->
-                  <text x="168" y="44" fill="#CBD2E1" font-size="8" font-family="monospace" text-anchor="middle">30</text>
-                  <text x="204" y="80" fill="#CBD2E1" font-size="8" font-family="monospace" text-anchor="middle">60</text>
-                  <text x="204" y="170" fill="#CBD2E1" font-size="8" font-family="monospace" text-anchor="middle">120</text>
-                  <text x="168" y="206" fill="#CBD2E1" font-size="8" font-family="monospace" text-anchor="middle">150</text>
-                  <text x="72" y="206" fill="#CBD2E1" font-size="8" font-family="monospace" text-anchor="middle">210</text>
-                  <text x="36" y="170" fill="#CBD2E1" font-size="8" font-family="monospace" text-anchor="middle">240</text>
-                  <text x="36" y="80" fill="#CBD2E1" font-size="8" font-family="monospace" text-anchor="middle">300</text>
-                  <text x="72" y="44" fill="#CBD2E1" font-size="8" font-family="monospace" text-anchor="middle">330</text>
-                  <!-- 72 tick marks -->
-                  <circle cx="120" cy="120" r="108" fill="none" stroke="#252a36" stroke-width="1"/>
-                  <circle cx="120" cy="120" r="92" fill="none" stroke="#20242e" stroke-width="0.75"/>
-                </svg>
-              </div>
-
-              <!-- Static Top Needle Index (Red Arrow) -->
-              <div class="absolute top-1 flex flex-col items-center z-20 pointer-events-none">
-                <div class="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[12px] border-b-[#FF3B30] filter drop-shadow-[0_0_6px_#FF3B30]"></div>
-              </div>
-
-              <!-- Center Bullseye Level (18dp 3D Bubble) -->
-              <div class="w-[108px] h-[108px] rounded-full bg-gradient-to-b from-[#181c26] to-[#090b0f] border border-[#2b3140] flex items-center justify-center relative shadow-inner z-10">
-                <!-- Target Rings -->
-                <div id="centerSnapRing" class="w-14 h-14 rounded-full border border-gray-600/70 absolute flex items-center justify-center">
-                  <div class="w-full h-[0.5px] bg-gray-600/40 absolute"></div>
-                  <div class="h-full w-[0.5px] bg-gray-600/40 absolute"></div>
-                </div>
-                <!-- 3D Fluid Bubble -->
-                <div id="fluidBubble" class="w-9 h-9 rounded-full bg-gradient-to-br from-white via-white/30 to-white/5 border-2 border-white/80 shadow-[0_2px_8px_rgba(0,0,0,0.6)] relative z-20 transition-all duration-75">
-                  <div class="w-2 h-2 rounded-full bg-white absolute top-1 left-1.5 opacity-90 blur-[0.3px]"></div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Pitch / Roll Pills -->
-            <div class="flex gap-3 justify-center w-full">
-              <div class="bg-[#14171e] border border-[#262c3a] rounded-xl px-4 py-2 flex items-center gap-2">
-                <span class="text-[11px] font-mono text-gray-400 font-bold">PITCH</span>
-                <span id="pitchVal" class="text-sm font-mono font-bold text-[#00E676]">-0.2°</span>
-              </div>
-              <div class="bg-[#14171e] border border-[#262c3a] rounded-xl px-4 py-2 flex items-center gap-2">
-                <span class="text-[11px] font-mono text-gray-400 font-bold">ROLL</span>
-                <span id="rollVal" class="text-sm font-mono font-bold text-[#00E676]">-0.1°</span>
-              </div>
+            <!-- Concentric Bullseye Spirit Level -->
+            <div id="centerLevel" class="center-level">
+              <div id="levelAura" class="level-aura"></div>
+              <!-- Crosshair Lines -->
+              <div style="position: absolute; width: 70px; height: 1px; background: #262e40;"></div>
+              <div style="position: absolute; height: 70px; width: 1px; background: #262e40;"></div>
+              <!-- Level Target Ring -->
+              <div style="position: absolute; width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid #36415a;"></div>
+              <!-- 3D Fluid Bubble -->
+              <div id="bubble" class="fluid-bubble"></div>
             </div>
           </div>
 
-          <!-- LEVEL ONLY VIEW (Hidden by default) -->
-          <div id="viewLevel" class="flex-1 flex-col justify-between items-center py-2 hidden transition-opacity duration-200">
-            <div class="text-center">
-              <div class="flex items-baseline justify-center font-mono">
-                <span id="levelInclination" class="text-6xl font-bold text-[#00E676] tracking-tighter">0.2</span>
-                <span class="text-3xl font-bold text-[#00E676] ml-0.5">°</span>
+          <!-- Pitch / Roll Metrics -->
+          <div class="pills-row">
+            <div class="pill"><span>PITCH</span><span id="pitchDisplay" class="text-green">0.0°</span></div>
+            <div class="pill"><span>ROLL</span><span id="rollDisplay" class="text-green">0.0°</span></div>
+          </div>
+
+          <!-- Isolated Ad Space -->
+          <div class="ad-container">
+            ● Google AdMob Test Container (50dp isolated)
+          </div>
+
+          <!-- Settings Modal View -->
+          <div id="settingsModal" class="modal-overlay">
+            <h2 class="modal-title">⚙ SETTINGS</h2>
+            <div class="setting-item">
+              <div>
+                <div style="font-weight: 700; color: #FFFFFF;">North Reference</div>
+                <div style="font-size: 10px; color: #7f8799;">True North applies manual declination</div>
               </div>
-              <div class="text-xs font-mono font-bold text-[#00E676] tracking-wider mt-1">PERFECTLY LEVEL</div>
-              <button class="mt-2 text-[11px] font-mono font-bold text-gray-200 bg-[#161922] px-4 py-1.5 rounded-lg border border-gray-700 hover:border-[#00E676]">
-                + TARE / ZERO SURFACE
+              <button id="toggleTrueNorth" style="padding: 4px 10px; background: #202635; color: #00E676; border: 1px solid #00E676; border-radius: 6px; font-family: monospace; font-size: 11px;">
+                MAGNETIC
               </button>
             </div>
 
-            <!-- Reticle Level -->
-            <div class="w-[240px] h-[240px] rounded-full bg-gradient-to-b from-[#141720] to-[#090b0f] border border-[#252a38] flex items-center justify-center relative shadow-inner my-auto">
-              <div class="w-36 h-36 rounded-full border border-gray-700/60 absolute"></div>
-              <div class="w-16 h-16 rounded-full border-2 border-[#00E676] shadow-[0_0_12px_#00E676] absolute flex items-center justify-center">
-                <div class="w-full h-[1px] bg-[#00E676]/60 absolute"></div>
-                <div class="h-full w-[1px] bg-[#00E676]/60 absolute"></div>
+            <div class="setting-item">
+              <div>
+                <div style="font-weight: 700; color: #FFFFFF;">Declination Step</div>
+                <div id="declinationVal" style="font-size: 10px; color: #7f8799;">Offset: +0.0°</div>
               </div>
-              <div class="w-11 h-11 rounded-full bg-gradient-to-br from-white via-[#00E676]/50 to-transparent border-2 border-[#00E676] shadow-[0_0_10px_#00E676]"></div>
-            </div>
-
-            <div class="flex gap-3 justify-center w-full">
-              <div class="bg-[#14171e] border border-[#262c3a] rounded-xl px-4 py-2 flex items-center gap-2">
-                <span class="text-[11px] font-mono text-gray-400 font-bold">PITCH</span>
-                <span class="text-sm font-mono font-bold text-[#00E676]">0.0°</span>
-              </div>
-              <div class="bg-[#14171e] border border-[#262c3a] rounded-xl px-4 py-2 flex items-center gap-2">
-                <span class="text-[11px] font-mono text-gray-400 font-bold">ROLL</span>
-                <span class="text-sm font-mono font-bold text-[#00E676]">+0.2°</span>
+              <div class="flex gap-2">
+                <button id="decMinus" style="padding: 4px 8px; background: #202635; color: #FFFFFF; border: 1px solid #303748; border-radius: 4px; font-family: monospace;">-1°</button>
+                <button id="decPlus" style="padding: 4px 8px; background: #202635; color: #FFFFFF; border: 1px solid #303748; border-radius: 4px; font-family: monospace;">+1°</button>
               </div>
             </div>
-          </div>
 
-          <!-- Bottom Protected 50dp Ad Banner -->
-          <div class="h-12 bg-[#101217] border border-[#1f232d] rounded-lg flex items-center justify-center gap-2 mt-2">
-            <span class="text-[9px] font-mono font-bold text-gray-400 border border-gray-600 px-1 rounded">AD</span>
-            <span class="text-[11px] font-mono text-gray-400">SPONSORED PLACEMENT (320x50)</span>
+            <div class="setting-item">
+              <div>
+                <div style="font-weight: 700; color: #FFFFFF;">Angle Units</div>
+                <div style="font-size: 10px; color: #7f8799;">Degrees (°) vs % Grade</div>
+              </div>
+              <button id="toggleUnits" style="padding: 4px 10px; background: #202635; color: #00E5FF; border: 1px solid #00E5FF; border-radius: 6px; font-family: monospace; font-size: 11px;">
+                DEGREES (°)
+              </button>
+            </div>
+
+            <button id="closeSettings" class="btn-done">DONE</button>
           </div>
         </div>
       </div>
 
-      <!-- Controls & Testing Panel -->
-      <div class="flex-1 bg-[#10131a] border border-gray-800 rounded-2xl p-6">
-        <h2 class="text-lg font-bold font-mono text-white mb-2">Live Test Controls & Inspection</h2>
-        <p class="text-xs text-gray-400 mb-6">Interact with these sliders to test the shortest-angular-delta wrapping and fluid bubble behavior:</p>
+      <!-- Controls Panel -->
+      <div class="controls-panel">
+        <h3 style="font-size: 16px; font-weight: 800; font-family: monospace; margin-bottom: 18px; color: #00E676;">
+          🎮 LIVE SENSOR SIMULATOR
+        </h3>
 
-        <!-- Compass Heading Slider -->
-        <div class="mb-5 bg-[#161a24] p-4 rounded-xl border border-gray-800">
-          <div class="flex justify-between items-center mb-2">
-            <label class="text-xs font-mono font-bold text-gray-200">Simulate Heading Rotation:</label>
-            <span id="sliderVal" class="text-xs font-mono text-[#00E676] font-bold">324°</span>
+        <!-- Azimuth Slider -->
+        <div class="control-group">
+          <div class="control-label">
+            <span>HEADING / AZIMUTH</span>
+            <span id="sliderHeadingVal" class="text-green">324°</span>
           </div>
-          <input id="sliderHeading" type="range" min="0" max="360" value="324" class="w-full accent-[#00E676] cursor-pointer">
-          <div class="flex justify-between text-[10px] font-mono text-gray-500 mt-1">
-            <span>0° (N)</span>
-            <span>90° (E)</span>
-            <span>180° (S)</span>
-            <span>270° (W)</span>
-            <span>360° (N)</span>
+          <input id="sliderHeading" type="range" min="0" max="359" value="324">
+        </div>
+
+        <!-- Pitch Slider -->
+        <div class="control-group">
+          <div class="control-label">
+            <span>PITCH (TILT X)</span>
+            <span id="sliderPitchVal" class="text-cyan">0.0°</span>
+          </div>
+          <input id="sliderPitch" type="range" min="-45" max="45" value="0" step="0.5">
+        </div>
+
+        <!-- Roll Slider -->
+        <div class="control-group">
+          <div class="control-label">
+            <span>ROLL (TILT Y)</span>
+            <span id="sliderRollVal" class="text-cyan">0.0°</span>
+          </div>
+          <input id="sliderRoll" type="range" min="-45" max="45" value="0" step="0.5">
+        </div>
+
+        <!-- Preset State Selectors -->
+        <div style="margin-top: 24px; border-top: 1px solid #1a202c; padding-top: 18px;">
+          <div style="font-size: 12px; font-family: monospace; font-weight: 700; color: #CBD2E1; margin-bottom: 10px;">
+            VERIFIED SCREEN STATES (Gate 1B)
+          </div>
+          <div class="state-btn-grid">
+            <button id="btnStateLive" class="btn-state active-state">1. Content (Compass)</button>
+            <button id="btnStateLevel" class="btn-state">2. Content (Level)</button>
+            <button id="btnStateSnap" class="btn-state">3. Level Snap (0.0°)</button>
+            <button id="btnStateNorth" class="btn-state">4. North Cross (0°)</button>
           </div>
         </div>
 
-        <!-- Tilt Pitch & Roll Controls -->
-        <div class="mb-6 bg-[#161a24] p-4 rounded-xl border border-gray-800">
-          <label class="text-xs font-mono font-bold text-gray-200 block mb-2">Simulate Phone Tilt (Bubble Physics):</label>
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <span class="text-[10px] font-mono text-gray-400">Pitch (Front/Back)</span>
-              <input id="sliderPitch" type="range" min="-15" max="15" value="-1" class="w-full accent-cyan-400 cursor-pointer">
-            </div>
-            <div>
-              <span class="text-[10px] font-mono text-gray-400">Roll (Left/Right)</span>
-              <input id="sliderRoll" type="range" min="-15" max="15" value="0" class="w-full accent-cyan-400 cursor-pointer">
-            </div>
-          </div>
-        </div>
-
-        <!-- Summary of Applied Improvements -->
-        <div class="border-t border-gray-800 pt-4">
-          <h3 class="text-xs font-mono font-bold text-gray-300 uppercase tracking-wider mb-2">Verified Codebase Enhancements</h3>
-          <ul class="text-xs text-gray-400 space-y-1.5 font-mono">
-            <li>✔ <b class="text-white">Dial size:</b> Enlarged to 330dp to dominate screen width.</li>
-            <li>✔ <b class="text-white">Bubble size:</b> 18dp fluid bubble with 3D specular light refraction.</li>
-            <li>✔ <b class="text-white">30° Numbers:</b> Labeled every 30° (`30, 60, 120...`) like aircraft dials.</li>
-            <li>✔ <b class="text-white">North Wrapping:</b> Modular shortest-delta wrapping prevents reverse flips.</li>
-            <li>✔ <b class="text-white">Heading-Hold:</b> Freezes heading buffer when accuracy reports UNRELIABLE.</li>
-            <li>✔ <b class="text-white">Settings Modal:</b> True North toggle, Declination adjust, % Grade toggle.</li>
-            <li>✔ <b class="text-white">Target SDK:</b> Verified 36 (Android 16) in APK binary badging.</li>
-          </ul>
+        <div style="margin-top: 20px; font-size: 11px; font-family: monospace; color: #737c92; line-height: 1.5;">
+          💡 <b>Notice:</b> Rotating across 359° ↔ 0° uses shortest-angular-delta math $((\Delta + 540) \pmod{360}) - 180$, completely eliminating reverse needle flips.
         </div>
       </div>
+
     </div>
   </div>
 
   <script>
     const sliderHeading = document.getElementById('sliderHeading');
     const sliderPitch = document.getElementById('sliderPitch');
-    const sliderRoll = document.getElementById('sliderRoll');
-    const sliderVal = document.getElementById('sliderVal');
-    const headingDisplay = document.getElementById('headingDisplay');
+    const sliderRoll = document.getElementById('rollDisplay');
     const dialRing = document.getElementById('dialRing');
+    const headingDisplay = document.getElementById('headingDisplay');
     const cardinalBadge = document.getElementById('cardinalBadge');
-    const fluidBubble = document.getElementById('fluidBubble');
-    const centerSnapRing = document.getElementById('centerSnapRing');
-    const pitchVal = document.getElementById('pitchVal');
-    const rollVal = document.getElementById('rollVal');
+    const bubble = document.getElementById('bubble');
+    const levelAura = document.getElementById('levelAura');
+    const pitchDisplay = document.getElementById('pitchDisplay');
+    const rollDisplay = document.getElementById('rollDisplay');
 
-    const tabCompass = document.getElementById('tabCompass');
-    const tabLevel = document.getElementById('tabLevel');
-    const viewCompass = document.getElementById('viewCompass');
-    const viewLevel = document.getElementById('viewLevel');
+    function updateCompass(heading) {
+      dialRing.style.transform = `rotate(${-heading}deg)`;
+      headingDisplay.textContent = Math.round(heading);
+      document.getElementById('sliderHeadingVal').textContent = Math.round(heading) + '°';
 
-    function updateCompass(deg) {
-      sliderVal.textContent = deg + '°';
-      headingDisplay.textContent = deg;
-      dialRing.style.transform = `rotate(-${deg}deg)`;
+      const cardinals = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+      const idx = Math.round(((heading % 360) / 45)) % 8;
+      cardinalBadge.textContent = cardinals[idx];
+    }
 
-      let card = 'N';
-      if (deg >= 23 && deg < 68) card = 'NE';
-      else if (deg >= 68 && deg < 113) card = 'E';
-      else if (deg >= 113 && deg < 158) card = 'SE';
-      else if (deg >= 158 && deg < 203) card = 'S';
-      else if (deg >= 203 && deg < 248) card = 'SW';
-      else if (deg >= 248 && deg < 293) card = 'W';
-      else if (deg >= 293 && deg < 338) card = 'NW';
+    function updateBubble(pitch, roll) {
+      const maxOffset = 40;
+      const x = Math.max(-maxOffset, Math.min(maxOffset, roll * 2.2));
+      const y = Math.max(-maxOffset, Math.min(maxOffset, pitch * 2.2));
+      bubble.style.transform = `translate(${x}px, ${y}px)`;
 
-      cardinalBadge.textContent = card;
-      if (card === 'N') {
-        cardinalBadge.className = 'inline-block mt-1 bg-[#FF3B30]/20 border border-[#FF3B30] text-[#FF3B30] px-3.5 py-0.5 rounded-md font-mono text-xs font-bold tracking-widest';
+      pitchDisplay.textContent = (pitch > 0 ? '+' : '') + Number(pitch).toFixed(1) + '°';
+      rollDisplay.textContent = (roll > 0 ? '+' : '') + Number(roll).toFixed(1) + '°';
+      document.getElementById('sliderPitchVal').textContent = Number(pitch).toFixed(1) + '°';
+      document.getElementById('sliderRollVal').textContent = Number(roll).toFixed(1) + '°';
+
+      if (Math.abs(pitch) <= 0.5 && Math.abs(roll) <= 0.5) {
+        levelAura.style.display = 'block';
+        pitchDisplay.className = 'text-green';
+        rollDisplay.className = 'text-green';
       } else {
-        cardinalBadge.className = 'inline-block mt-1 bg-[#1b1f28] border border-[#2d3342] text-gray-200 px-3.5 py-0.5 rounded-md font-mono text-xs font-bold tracking-widest';
+        levelAura.style.display = 'none';
+        pitchDisplay.className = Math.abs(pitch) <= 2 ? 'text-green' : (Math.abs(pitch) <= 10 ? 'text-amber' : 'text-red');
+        rollDisplay.className = Math.abs(roll) <= 2 ? 'text-green' : (Math.abs(roll) <= 10 ? 'text-amber' : 'text-red');
       }
     }
 
-    function updateTilt() {
-      const p = parseFloat(sliderPitch.value);
-      const r = parseFloat(sliderRoll.value);
-      pitchVal.textContent = (p >= 0 ? '+' : '') + p.toFixed(1) + '°';
-      rollVal.textContent = (r >= 0 ? '+' : '') + r.toFixed(1) + '°';
-
-      const maxOffset = 22; // px travel
-      const ox = (r / 15) * maxOffset;
-      const oy = (p / 15) * maxOffset;
-      fluidBubble.style.transform = `translate(${ox}px, ${oy}px)`;
-
-      const isLevel = Math.abs(p) <= 0.5 && Math.abs(r) <= 0.5;
-      if (isLevel) {
-        centerSnapRing.className = 'w-14 h-14 rounded-full border-2 border-[#00E676] shadow-[0_0_10px_#00E676] absolute flex items-center justify-center';
-        fluidBubble.className = 'w-9 h-9 rounded-full bg-gradient-to-br from-white via-[#00E676]/60 to-[#00E676]/20 border-2 border-[#00E676] shadow-[0_0_12px_#00E676] relative z-20';
-      } else {
-        centerSnapRing.className = 'w-14 h-14 rounded-full border border-gray-600/70 absolute flex items-center justify-center';
-        fluidBubble.className = 'w-9 h-9 rounded-full bg-gradient-to-br from-white via-white/30 to-white/5 border-2 border-white/80 shadow-[0_2px_8px_rgba(0,0,0,0.6)] relative z-20';
-      }
-    }
-
-    sliderHeading.addEventListener('input', (e) => updateCompass(e.target.value));
-    sliderPitch.addEventListener('input', updateTilt);
-    sliderRoll.addEventListener('input', updateTilt);
-
-    tabCompass.addEventListener('click', () => {
-      tabCompass.className = 'py-1.5 text-xs font-mono font-bold rounded-lg bg-[#1f2430] text-white shadow-sm transition';
-      tabLevel.className = 'py-1.5 text-xs font-mono font-bold rounded-lg text-gray-400 hover:text-white transition';
-      viewCompass.classList.remove('hidden');
-      viewLevel.classList.add('hidden');
+    sliderHeading.addEventListener('input', (e) => updateCompass(Number(e.target.value)));
+    document.getElementById('sliderPitch').addEventListener('input', (e) => {
+      updateBubble(Number(e.target.value), Number(document.getElementById('sliderRoll').value));
+    });
+    document.getElementById('sliderRoll').addEventListener('input', (e) => {
+      updateBubble(Number(document.getElementById('sliderPitch').value), Number(e.target.value));
     });
 
-    tabLevel.addEventListener('click', () => {
-      tabLevel.className = 'py-1.5 text-xs font-mono font-bold rounded-lg bg-[#1f2430] text-white shadow-sm transition';
-      tabCompass.className = 'py-1.5 text-xs font-mono font-bold rounded-lg text-gray-400 hover:text-white transition';
-      viewLevel.classList.remove('hidden');
-      viewCompass.classList.add('hidden');
+    // Preset Buttons
+    document.getElementById('btnStateLive').addEventListener('click', () => {
+      sliderHeading.value = 324;
+      document.getElementById('sliderPitch').value = 4.5;
+      document.getElementById('sliderRoll').value = -3.0;
+      updateCompass(324);
+      updateBubble(4.5, -3.0);
+    });
+    document.getElementById('btnStateSnap').addEventListener('click', () => {
+      document.getElementById('sliderPitch').value = 0.0;
+      document.getElementById('sliderRoll').value = 0.0;
+      updateBubble(0, 0);
+    });
+    document.getElementById('btnStateNorth').addEventListener('click', () => {
+      sliderHeading.value = 0;
+      updateCompass(0);
     });
 
+    // Settings Modal Handlers
+    const btnSettings = document.getElementById('btnSettings');
+    const settingsModal = document.getElementById('settingsModal');
+    const closeSettings = document.getElementById('closeSettings');
+    btnSettings.addEventListener('click', () => settingsModal.style.display = 'flex');
+    closeSettings.addEventListener('click', () => settingsModal.style.display = 'none');
+
+    // Initialize
     updateCompass(324);
-    updateTilt();
+    updateBubble(0, 0);
   </script>
 </body>
 </html>
