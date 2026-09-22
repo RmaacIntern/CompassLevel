@@ -17,3 +17,32 @@ local.properties
 .idea/
 *.iml
 
+
+# IDE config (untracked per Gate 2 hygiene)
+.idea/
+
+# Root-level screenshot blobs (untracked per Gate 2 hygiene)
+screen_content.png
+screen_empty.png
+screen_error.png
+screen_loading.png
+
+# docs/ image blobs
+docs/*.png
+docs/*.jpg
+docs/wireframe_board.html
+docs/Day*
+
+# Stale template tests
+app/src/androidTest/java/com/aivigil/day0check/
+app/src/test/java/com/aivigil/day0check/
+
+# Gradle daemon JVM properties (machine-specific)
+gradle/gradle-daemon-jvm.properties
+
+# Unused XML resources (Compose handles theme/colors/proguard)
+app/src/main/keepRules/
+app/src/main/res/values/colors.xml
+app/src/main/res/values/themes.xml
+app/src/main/res/xml/backup_rules.xml
+app/src/main/res/xml/data_extraction_rules.xml
