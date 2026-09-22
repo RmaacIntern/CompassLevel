@@ -325,19 +325,27 @@ fun CompassRoseDial(
     val glowPath = remember { android.graphics.Path() }
 
     Box(
-        modifier = modifier.size(290.dp),
+        modifier = modifier.size(330.dp),
         contentAlignment = Alignment.Center
     ) {
-        // ── 1. Outer Machined Bezel Frame (Static, Zero GPU Re-draw) ───────
+        // ── 1. Outer Machined Bezel Frame (Floating Modern Glass/Metal Bezel) ──
         Canvas(modifier = Modifier.fillMaxSize()) {
             val center = Offset(size.width / 2f, size.height / 2f)
-            val outerRadius = 140.dp.toPx()
-            val bezelRadius = 136.dp.toPx()
+            val outerRadius = 162.dp.toPx()
+            val bezelRadius = 158.dp.toPx()
 
-            // Metallic outer bezel
-            drawCircle(color = BorderSubtle, radius = outerRadius, center = center, style = Stroke(1.5.dp.toPx()))
-            drawCircle(color = DialBackground, radius = bezelRadius, center = center)
-            drawCircle(color = BorderStrong, radius = bezelRadius, center = center, style = Stroke(1.dp.toPx()))
+            // Subtle dark radial gradient for depth
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(Color(0xFF141720), Color(0xFF08090C)),
+                    center = center,
+                    radius = outerRadius
+                ),
+                radius = outerRadius,
+                center = center
+            )
+            drawCircle(color = BorderSubtle, radius = outerRadius, center = center, style = Stroke(1.dp.toPx()))
+            drawCircle(color = BorderStrong.copy(alpha = 0.6f), radius = bezelRadius, center = center, style = Stroke(0.75.dp.toPx()))
         }
 
         // ── 2. Rotating Dial Track (GPU Rotated via graphicsLayer Lambda) ──
@@ -353,13 +361,13 @@ fun CompassRoseDial(
                 val cx = size.width / 2f
                 val cy = size.height / 2f
                 val center = Offset(cx, cy)
-                val trackRadius = 132.dp.toPx()
-                val innerTrackRadius = 110.dp.toPx()
-                val labelRadius = 94.dp.toPx()
+                val trackRadius = 154.dp.toPx()
+                val innerTrackRadius = 126.dp.toPx()
+                val labelRadius = 108.dp.toPx()
 
                 // Tick ring boundary
-                drawCircle(color = BorderSubtle, radius = trackRadius, center = center, style = Stroke(0.5.dp.toPx()))
-                drawCircle(color = BorderStrong, radius = innerTrackRadius, center = center, style = Stroke(0.5.dp.toPx()))
+                drawCircle(color = BorderSubtle.copy(alpha = 0.7f), radius = trackRadius, center = center, style = Stroke(0.5.dp.toPx()))
+                drawCircle(color = BorderStrong.copy(alpha = 0.5f), radius = innerTrackRadius, center = center, style = Stroke(0.5.dp.toPx()))
 
                 // Draw precision 360° ticks (every 2 degrees, major at 10, super major at 30)
                 for (i in 0 until 180) {
@@ -369,14 +377,14 @@ fun CompassRoseDial(
                     val isMajor = (i % 5 == 0)      // every 10°
 
                     val tickLen = when {
-                        isSuperMajor -> 14.dp.toPx()
-                        isMajor      -> 9.dp.toPx()
+                        isSuperMajor -> 16.dp.toPx()
+                        isMajor      -> 10.dp.toPx()
                         else         -> 5.dp.toPx()
                     }
                     val tickColor = when {
-                        isSuperMajor -> TextPrimary
+                        isSuperMajor -> TextWhite
                         isMajor      -> TextSecondary
-                        else         -> BorderStrong
+                        else         -> BorderStrong.copy(alpha = 0.6f)
                     }
                     val strokeW = if (isSuperMajor) 1.5.dp.toPx() else 0.75.dp.toPx()
 
@@ -399,12 +407,12 @@ fun CompassRoseDial(
                     val x = (cx + labelRadius * cos(rad)).toFloat()
                     val y = (cy + labelRadius * sin(rad)).toFloat()
 
-                    textPaint.textSize = if (label == "N") 16.sp.toPx() else if (isCardinal) 13.sp.toPx() else 10.sp.toPx()
+                    textPaint.textSize = if (label == "N") 18.sp.toPx() else if (isCardinal) 14.sp.toPx() else 11.sp.toPx()
                     textPaint.typeface = Typeface.create(Typeface.MONOSPACE, if (isCardinal) Typeface.BOLD else Typeface.NORMAL)
                     textPaint.color = when (label) {
-                        "N"  -> android.graphics.Color.parseColor("#FF2A2A")
+                        "N"  -> android.graphics.Color.parseColor("#FF3B30")
                         "E", "S", "W" -> android.graphics.Color.WHITE
-                        else -> android.graphics.Color.parseColor("#8A909E")
+                        else -> android.graphics.Color.parseColor("#8E95A5")
                     }
 
                     val textY = y - ((textPaint.descent() + textPaint.ascent()) / 2f)
@@ -422,36 +430,44 @@ fun CompassRoseDial(
                 val glowPaint = android.graphics.Paint().apply {
                     isAntiAlias = true
                     style = android.graphics.Paint.Style.FILL
-                    color = android.graphics.Color.parseColor("#55FF2A2A")
-                    maskFilter = android.graphics.BlurMaskFilter(8.dp.toPx(), android.graphics.BlurMaskFilter.Blur.NORMAL)
+                    color = android.graphics.Color.parseColor("#55FF3B30")
+                    maskFilter = android.graphics.BlurMaskFilter(10.dp.toPx(), android.graphics.BlurMaskFilter.Blur.NORMAL)
                 }
                 glowPath.reset()
                 glowPath.moveTo(cx, 4.dp.toPx())
-                glowPath.lineTo(cx - 8.dp.toPx(), 22.dp.toPx())
-                glowPath.lineTo(cx, 18.dp.toPx())
-                glowPath.lineTo(cx + 8.dp.toPx(), 22.dp.toPx())
+                glowPath.lineTo(cx - 9.dp.toPx(), 24.dp.toPx())
+                glowPath.lineTo(cx, 19.dp.toPx())
+                glowPath.lineTo(cx + 9.dp.toPx(), 24.dp.toPx())
                 glowPath.close()
                 canvas.nativeCanvas.drawPath(glowPath, glowPaint)
             }
 
             needlePath.reset()
             needlePath.moveTo(cx, 4.dp.toPx())
-            needlePath.lineTo(cx - 7.dp.toPx(), 20.dp.toPx())
-            needlePath.lineTo(cx, 16.dp.toPx())
-            needlePath.lineTo(cx + 7.dp.toPx(), 20.dp.toPx())
+            needlePath.lineTo(cx - 8.dp.toPx(), 22.dp.toPx())
+            needlePath.lineTo(cx, 17.dp.toPx())
+            needlePath.lineTo(cx + 8.dp.toPx(), 22.dp.toPx())
             needlePath.close()
             drawPath(path = needlePath, color = LaserRed)
         }
 
-        // ── 4. Center 2D Bullseye Spirit Level ─────────────────────────────
-        Canvas(modifier = Modifier.size(100.dp)) {
+        // ── 4. Center 2D Bullseye Spirit Level (Modern Large Fluid Bubble) ─
+        Canvas(modifier = Modifier.size(136.dp)) {
             val center = Offset(size.width / 2f, size.height / 2f)
-            val outerRadius = 45.dp.toPx()
-            val snapRadius = 18.dp.toPx()
-            val bubbleRadius = 11.dp.toPx()
+            val outerRadius = 64.dp.toPx()
+            val snapRadius = 28.dp.toPx()
+            val bubbleRadius = 18.dp.toPx()
 
             // Bezel for center level
-            drawCircle(color = DialBackground, radius = outerRadius, center = center)
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(Color(0xFF161A22), Color(0xFF0A0C10)),
+                    center = center,
+                    radius = outerRadius
+                ),
+                radius = outerRadius,
+                center = center
+            )
             drawCircle(color = BorderSubtle, radius = outerRadius, center = center, style = Stroke(1.dp.toPx()))
 
             // Snap boundary target
@@ -463,35 +479,35 @@ fun CompassRoseDial(
                 color = targetColor.copy(alpha = 0.5f),
                 start = Offset(center.x - snapRadius, center.y),
                 end = Offset(center.x + snapRadius, center.y),
-                strokeWidth = 0.75.dp.toPx()
+                strokeWidth = 1.dp.toPx()
             )
             drawLine(
                 color = targetColor.copy(alpha = 0.5f),
                 start = Offset(center.x, center.y - snapRadius),
                 end = Offset(center.x, center.y + snapRadius),
-                strokeWidth = 0.75.dp.toPx()
+                strokeWidth = 1.dp.toPx()
             )
 
             // Neon emerald halo when perfectly level
             if (isLevel) {
-                drawCircle(color = GlowGreen, radius = snapRadius + 6.dp.toPx(), center = center, style = Stroke(6.dp.toPx()))
+                drawCircle(color = GlowGreen, radius = snapRadius + 8.dp.toPx(), center = center, style = Stroke(8.dp.toPx()))
             }
 
             // Liquid bubble position with physics clamp
-            val maxTravel = outerRadius - bubbleRadius - 2.dp.toPx()
+            val maxTravel = outerRadius - bubbleRadius - 3.dp.toPx()
             val offsetX = (roll.coerceIn(-20f, 20f) / 20f * maxTravel)
             val offsetY = (pitch.coerceIn(-20f, 20f) / 20f * maxTravel)
             val bubbleCenter = Offset(center.x + offsetX, center.y + offsetY)
 
-            // Fluid highlight
+            // Modern 3D fluid bubble highlight (specular refraction)
             drawCircle(
                 brush = Brush.radialGradient(
                     colors = listOf(
-                        BubbleGlassLight,
-                        if (isLevel) BubbleFluidGreen else BubbleGlassMid,
-                        BubbleGlassDark
+                        Color(0xF5FFFFFF), // crisp specular highlight
+                        if (isLevel) Color(0x8800E676) else Color(0x35FFFFFF), // fluid body
+                        Color(0x05FFFFFF)  // transparent edge
                     ),
-                    center = Offset(bubbleCenter.x - 2.dp.toPx(), bubbleCenter.y - 2.dp.toPx()),
+                    center = Offset(bubbleCenter.x - 4.dp.toPx(), bubbleCenter.y - 4.dp.toPx()),
                     radius = bubbleRadius
                 ),
                 radius = bubbleRadius,
@@ -500,10 +516,10 @@ fun CompassRoseDial(
 
             // Bubble glass rim
             drawCircle(
-                color = if (isLevel) NeonEmerald else TextSecondary,
+                color = if (isLevel) NeonEmerald else Color(0xD0FFFFFF),
                 radius = bubbleRadius,
                 center = bubbleCenter,
-                style = Stroke(1.5.dp.toPx())
+                style = Stroke(2.dp.toPx())
             )
         }
     }
@@ -528,19 +544,27 @@ fun ReticleSpiritLevel(
         }
     }
 
-    Canvas(modifier = modifier.size(280.dp)) {
+    Canvas(modifier = modifier.size(330.dp)) {
         val center = Offset(size.width / 2f, size.height / 2f)
-        val outerRadius = 130.dp.toPx()
-        val midRadius = 85.dp.toPx()
-        val snapRadius = 32.dp.toPx()
-        val bubbleRadius = 14.dp.toPx()
+        val outerRadius = 155.dp.toPx()
+        val midRadius = 100.dp.toPx()
+        val snapRadius = 40.dp.toPx()
+        val bubbleRadius = 22.dp.toPx()
 
         val snapColor = if (isLevel) NeonEmerald else BorderStrong
 
         // Concentric precision rings
-        drawCircle(color = DialBackground, radius = outerRadius, center = center)
-        drawCircle(color = BorderSubtle, radius = outerRadius, center = center, style = Stroke(1.dp.toPx()))
-        drawCircle(color = BorderSubtle, radius = midRadius, center = center, style = Stroke(1.dp.toPx()))
+        drawCircle(
+            brush = Brush.radialGradient(
+                colors = listOf(Color(0xFF161A22), Color(0xFF090A0E)),
+                center = center,
+                radius = outerRadius
+            ),
+            radius = outerRadius,
+            center = center
+        )
+        drawCircle(color = BorderSubtle, radius = outerRadius, center = center, style = Stroke(1.2.dp.toPx()))
+        drawCircle(color = BorderSubtle.copy(alpha = 0.7f), radius = midRadius, center = center, style = Stroke(1.dp.toPx()))
         drawCircle(color = snapColor, radius = snapRadius, center = center, style = Stroke(2.dp.toPx()))
 
         // Full-span precision crosshairs
@@ -562,22 +586,22 @@ fun ReticleSpiritLevel(
             color = snapColor,
             start = Offset(center.x - snapRadius, center.y),
             end = Offset(center.x + snapRadius, center.y),
-            strokeWidth = 1.dp.toPx()
+            strokeWidth = 1.2.dp.toPx()
         )
         drawLine(
             color = snapColor,
             start = Offset(center.x, center.y - snapRadius),
             end = Offset(center.x, center.y + snapRadius),
-            strokeWidth = 1.dp.toPx()
+            strokeWidth = 1.2.dp.toPx()
         )
 
         // Emerald glow halo when leveled
         if (isLevel) {
             drawCircle(
                 color = GlowGreenSoft,
-                radius = snapRadius + 8.dp.toPx(),
+                radius = snapRadius + 10.dp.toPx(),
                 center = center,
-                style = Stroke(12.dp.toPx())
+                style = Stroke(14.dp.toPx())
             )
         }
 
@@ -586,7 +610,7 @@ fun ReticleSpiritLevel(
             val deg = i * 5.0
             val rad = Math.toRadians(deg)
             val isMajor = (i % 9 == 0) // every 45°
-            val tickLen = if (isMajor) 14.dp.toPx() else 7.dp.toPx()
+            val tickLen = if (isMajor) 15.dp.toPx() else 8.dp.toPx()
             val start = Offset(
                 (center.x + (outerRadius - tickLen) * cos(rad)).toFloat(),
                 (center.y + (outerRadius - tickLen) * sin(rad)).toFloat()
@@ -596,7 +620,7 @@ fun ReticleSpiritLevel(
                 (center.y + outerRadius * sin(rad)).toFloat()
             )
             drawLine(
-                color = if (isMajor) TextSecondary else BorderStrong,
+                color = if (isMajor) TextWhite else BorderStrong,
                 start = start,
                 end = end,
                 strokeWidth = if (isMajor) 1.5.dp.toPx() else 0.75.dp.toPx()
@@ -609,15 +633,15 @@ fun ReticleSpiritLevel(
         val offsetY = (pitch.coerceIn(-25f, 25f) / 25f * maxTravel)
         val bubbleCenter = Offset(center.x + offsetX, center.y + offsetY)
 
-        // Bubble fill with radial highlight
+        // Modern 3D fluid bubble highlight
         drawCircle(
             brush = Brush.radialGradient(
                 colors = listOf(
-                    BubbleGlassLight,
-                    if (isLevel) BubbleFluidGreen else BubbleGlassMid,
-                    BubbleGlassDark
+                    Color(0xF5FFFFFF),
+                    if (isLevel) Color(0x8800E676) else Color(0x35FFFFFF),
+                    Color(0x05FFFFFF)
                 ),
-                center = Offset(bubbleCenter.x - 3.dp.toPx(), bubbleCenter.y - 3.dp.toPx()),
+                center = Offset(bubbleCenter.x - 5.dp.toPx(), bubbleCenter.y - 5.dp.toPx()),
                 radius = bubbleRadius
             ),
             radius = bubbleRadius,
@@ -625,10 +649,10 @@ fun ReticleSpiritLevel(
         )
 
         drawCircle(
-            color = if (isLevel) NeonEmerald else AmberWarning,
+            color = if (isLevel) NeonEmerald else Color(0xD0FFFFFF),
             radius = bubbleRadius,
             center = bubbleCenter,
-            style = Stroke(2.dp.toPx())
+            style = Stroke(2.5.dp.toPx())
         )
     }
 }
