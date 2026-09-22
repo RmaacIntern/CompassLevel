@@ -2,8 +2,8 @@
 title: "CompassLevel — 2026-09-22 session log: Settings Screen, Heading-Hold Buffer & Day 1 Verification"
 app: com.aivigil.compasslevel
 date: 2026-09-22
-tip: HEAD
-status: "All Day 0 and Day 1 gates, brief requirements, settings screen, heading-hold buffer, and documentation fully verified and published."
+tip: b6d9220
+status: "Enlarged 330dp compass dial & 18dp 3D fluid spirit bubble implemented; APK verified on Desktop; pushed to GitHub."
 type: session log
 ---
 
@@ -11,15 +11,22 @@ type: session log
 
 | Area | State |
 |---|---|
-| Sensor Engine | 60fps `SENSOR_DELAY_GAME`, shortest-angular-delta wrapping, Heading-Hold buffer when `UNRELIABLE`, tare calibration, True North manual declination |
-| Screens | Live Compass (with integrated bubble), Spirit Level (degrees / % grade toggle, tare zero), Settings screen (True/Magnetic North, Units, About), Error & Loading states |
-| Documentation | `DAY-0.md`, `DAY-1.md`, `SPEC.md`, `DESIGN.md`, `ARCHITECTURE.md`, `APPROVAL.md`, `SESSION-LOG-2026-09-22.md` complete and aligned |
-| APK | `CompassLevel-Gate1B-debug.apk` — 11.8 MB [certain — `Get-Item` output], on Desktop |
-| GitHub | Clean working tree; all changes pushed to `origin/main` and `personal/main` |
+| Compass Dial | Enlarged to 330dp with 360° precision tick track, floating metallic bezel, and high-visibility cardinals |
+| Center Spirit Bubble | Enlarged by >60% (18dp bubble, 136dp center level) with 3D fluid refraction shader and neon emerald level aura |
+| Full Level Mode | Reticle expanded to 330dp with 22dp fluid bubble and tare zero button |
+| Settings & Sensor | True/Magnetic North, Declination adjust, Units toggle (% Grade vs °), Heading-Hold buffer when `UNRELIABLE` |
+| APK | `CompassLevel-Gate1B-debug.apk` — 11.8 MB [certain], on Desktop |
+| GitHub | Pushed to `origin/main` and `personal/main` at commit `b6d9220` [certain] |
 
 ---
 
 # What I did
+
+0. **UI Modernization & Dial Enlargement (`SharedComponents.kt`)**:
+   Enlarged compass dial from 290dp to 330dp to dominate screen width with high-end presence.
+   Enlarged center spirit level from 100dp to 136dp and expanded bubble radius from 11dp to 18dp (>60% increase).
+   Engineered multi-layer 3D fluid glass shader with realistic specular highlight refraction and neon emerald level snap aura.
+   Expanded full-screen spirit level reticle to 330dp with 22dp fluid bubble.
 
 1. **Heading-Hold Buffer (`CompassSensorManager.kt`)**:
    Implemented heading-hold buffer to freeze the dial at `lastKnownGoodHeading` when accuracy reports `SENSOR_STATUS_UNRELIABLE`. Directly satisfies App A brief: *"Smooth noisy sensor values and hold the last good heading when accuracy becomes UNRELIABLE."*
