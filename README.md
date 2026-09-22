@@ -79,6 +79,7 @@ adb install -r .\app\build\outputs\apk\debug\app-debug.apk
 ## Documentation Index
 
 - **[`POST-MORTEM.md`](POST-MORTEM.md):** Complete master post-mortem & engineering audit (Phases 1-4).
+- **[`COMPETITOR-RESEARCH.md`](COMPETITOR-RESEARCH.md):** Comprehensive UI & feature benchmark across 4 market competitor apps.
 - **[`SPEC.md`](SPEC.md):** Gate 1 feature boundaries & out-of-scope declarations.
 - **[`DESIGN.md`](DESIGN.md):** Gate 1B UI states & visual hierarchy specification.
 - **[`ARCHITECTURE.md`](ARCHITECTURE.md):** Gate 2 technical decisions, data flows, and known weaknesses.

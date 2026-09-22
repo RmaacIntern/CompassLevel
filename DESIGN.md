@@ -1,9 +1,13 @@
-﻿# DESIGN: Compass & Level (App A)
+# DESIGN: Compass & Level (App A)
 **Design Gate:** Gate 1B (Screen States & Layout Specifications)
 
 ## Visual Board & Interactive Showcase (Gate 1B)
 An interactive prototype comparing top Play Store market competitors (50M+ downloads) against our upgraded tactical instrument design is available in the repository:
 👉 [**Open Interactive Showcase**](docs/screens_interactive_showcase.html)
+
+### Competitor UI Research Dossier
+For the comprehensive benchmark covering 4 competitor apps (Axiomatic Digital Compass, Galaxy Compass, Bubble Level Pro, and Apple Compass) analyzing feature sets, visual hierarchies, and critical UX flaws:
+👉 [**Read the Full Competitor UI Research Dossier**](COMPETITOR-RESEARCH.md)
 
 ---
 

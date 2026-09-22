@@ -56,6 +56,16 @@ type: session log
    - Authored `QA-REPORT.md` verifying all 15 operational test scenarios across both devices.
    - Updated `APPROVAL.md`, `DAY-0.md`, `DAY-1.md`, `POST-MORTEM.md`, `README.md`, and `docs/screens_interactive_showcase.html`.
 
+7. **Competitor UI & Feature Research Dossier (`COMPETITOR-RESEARCH.md`)**:
+   - Responded to Product Lead (Shezrah Abbasi) mandate to conduct deep-dive UI research across 3-4 competitor apps in our category.
+   - Authored `COMPETITOR-RESEARCH.md` analyzing:
+     1. Digital Compass by Axiomatic (50M+ downloads)
+     2. Galaxy Compass by Justaway Tech (10M+ downloads)
+     3. Bubble Level Pro by Gamma Play (10M+ downloads)
+     4. Apple Native iOS Compass & Level (Industry benchmark)
+   - Mapped actionable design decisions (330dp dial, concentric 136dp level, 18dp 3D fluid bubble, 60fps GPU pipeline, shortest-angular-delta math, Tare zeroing, zero permissions) directly addressing competitor flaws.
+   - Linked in `DESIGN.md` and `README.md`.
+
 ---
 
 # What I got wrong
