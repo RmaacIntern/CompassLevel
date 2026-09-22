@@ -1,6 +1,6 @@
 # Competitor UI & Feature Research Dossier
 **Project:** Compass & Level (`com.aivigil.compasslevel`)  
-**Lead Developers:** Rizwan (`riz5y`), Shazil  
+**Lead Developer:** Rizwan (`riz5y`)  
 **Product Lead:** Shezrah Abbasi  
 **Date:** 2026-09-22  
 **Target Platform:** Android 16 (SDK 36) | Min SDK 24  
