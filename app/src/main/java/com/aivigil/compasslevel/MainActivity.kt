@@ -25,6 +25,7 @@ class MainActivity : ComponentActivity() {
                 val sensorState by sensorManager.compassState.collectAsState()
                 var currentMode by remember { mutableStateOf("Compass") }
                 var showCalibrationModal by remember { mutableStateOf(false) }
+                var showSettingsModal by remember { mutableStateOf(false) }
 
                 Column(
                     modifier = Modifier
@@ -35,7 +36,8 @@ class MainActivity : ComponentActivity() {
                 ) {
                     TopActionBar(
                         isReliable = sensorState.isReliable,
-                        onCalibrateClick = { showCalibrationModal = true }
+                        onCalibrateClick = { showCalibrationModal = true },
+                        onSettingsClick = { showSettingsModal = true }
                     )
 
                     SegmentedModeSelector(
@@ -48,7 +50,23 @@ class MainActivity : ComponentActivity() {
                             .weight(1f)
                             .fillMaxWidth()
                     ) {
-                        if (showCalibrationModal) {
+                        if (showSettingsModal) {
+                            ScreenSettingsView(
+                                isTrueNorth = sensorState.isTrueNorth,
+                                declination = sensorState.declination,
+                                usePercentGrade = sensorState.usePercentGrade,
+                                onTrueNorthToggle = { enabled ->
+                                    sensorManager.setTrueNorth(enabled, sensorState.declination)
+                                },
+                                onDeclinationChange = { newDecl ->
+                                    sensorManager.setTrueNorth(sensorState.isTrueNorth, newDecl)
+                                },
+                                onPercentGradeToggle = { enabled ->
+                                    sensorManager.setUsePercentGrade(enabled)
+                                },
+                                onClose = { showSettingsModal = false }
+                            )
+                        } else if (showCalibrationModal) {
                             ScreenErrorView(onDismiss = { showCalibrationModal = false })
                         } else {
                             when (currentMode) {
@@ -57,6 +75,7 @@ class MainActivity : ComponentActivity() {
                                         pitch = sensorState.pitch,
                                         roll = sensorState.roll,
                                         isLevel = sensorState.isLevel,
+                                        usePercentGrade = sensorState.usePercentGrade,
                                         onTareClick = { sensorManager.tare() }
                                     )
                                 }
@@ -66,6 +85,7 @@ class MainActivity : ComponentActivity() {
                                             pitch = sensorState.pitch,
                                             roll = sensorState.roll,
                                             isLevel = sensorState.isLevel,
+                                            usePercentGrade = sensorState.usePercentGrade,
                                             onTareClick = { sensorManager.tare() }
                                         )
                                     } else {

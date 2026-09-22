@@ -228,9 +228,17 @@ fun ScreenContentView(
     pitch: Float,
     roll: Float,
     isLevel: Boolean,
+    usePercentGrade: Boolean = false,
     onTareClick: () -> Unit = {}
 ) {
     val totalInclination = max(abs(pitch), abs(roll))
+    val displayValue = if (usePercentGrade) {
+        val grade = kotlin.math.tan(Math.toRadians(totalInclination.toDouble())) * 100.0
+        String.format("%.1f", grade)
+    } else {
+        String.format("%.1f", totalInclination)
+    }
+    val unitSymbol = if (usePercentGrade) "%" else "°"
 
     val angleColor by animateColorAsState(
         targetValue = when {
@@ -257,14 +265,14 @@ fun ScreenContentView(
                 horizontalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = String.format("%.1f", totalInclination),
+                    text = displayValue,
                     fontSize = 72.sp,
                     fontWeight = FontWeight.Bold,
                     color = angleColor,
                     fontFamily = FontFamily.Monospace
                 )
                 Text(
-                    text = "°",
+                    text = unitSymbol,
                     fontSize = 36.sp,
                     fontWeight = FontWeight.Bold,
                     color = angleColor,
@@ -462,6 +470,266 @@ fun ScreenErrorView(
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.sp
             )
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SCREEN 6: SETTINGS (True/Magnetic North, Units, About)
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+fun ScreenSettingsView(
+    isTrueNorth: Boolean,
+    declination: Float,
+    usePercentGrade: Boolean,
+    onTrueNorthToggle: (Boolean) -> Unit,
+    onDeclinationChange: (Float) -> Unit,
+    onPercentGradeToggle: (Boolean) -> Unit,
+    onClose: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(DarkSurface)
+            .padding(horizontal = 20.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "SETTINGS",
+                    color = TextWhite,
+                    fontSize = 18.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 2.sp
+                )
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(CardSurface)
+                        .border(1.dp, BorderStrong, RoundedCornerShape(8.dp))
+                        .clickable { onClose() }
+                        .padding(horizontal = 14.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = "DONE",
+                        color = NeonEmerald,
+                        fontSize = 12.sp,
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
+            // Card 1: North Reference (Magnetic vs True North)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(CardSurface)
+                    .border(1.dp, BorderSubtle, RoundedCornerShape(12.dp))
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = "NORTH REFERENCE",
+                    color = TextSecondary,
+                    fontSize = 11.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(if (!isTrueNorth) CardSurfaceElevated else Color.Transparent)
+                            .border(1.dp, if (!isTrueNorth) LaserRed else BorderSubtle, RoundedCornerShape(8.dp))
+                            .clickable { onTrueNorthToggle(false) }
+                            .padding(vertical = 10.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "MAGNETIC",
+                            color = if (!isTrueNorth) TextWhite else TextSecondary,
+                            fontSize = 12.sp,
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(if (isTrueNorth) CardSurfaceElevated else Color.Transparent)
+                            .border(1.dp, if (isTrueNorth) LaserRed else BorderSubtle, RoundedCornerShape(8.dp))
+                            .clickable { onTrueNorthToggle(true) }
+                            .padding(vertical = 10.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "TRUE NORTH",
+                            color = if (isTrueNorth) TextWhite else TextSecondary,
+                            fontSize = 12.sp,
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                if (isTrueNorth) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Declination: ${if (declination >= 0) "+" else ""}${declination.toInt()}°",
+                            color = TextPrimary,
+                            fontSize = 12.sp,
+                            fontFamily = FontFamily.Monospace
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(CardSurfaceElevated)
+                                    .border(1.dp, BorderStrong, RoundedCornerShape(6.dp))
+                                    .clickable { onDeclinationChange(declination - 1f) }
+                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text(text = "-1°", color = TextWhite, fontSize = 12.sp, fontFamily = FontFamily.Monospace)
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(6.dp))
+                                    .background(CardSurfaceElevated)
+                                    .border(1.dp, BorderStrong, RoundedCornerShape(6.dp))
+                                    .clickable { onDeclinationChange(declination + 1f) }
+                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text(text = "+1°", color = TextWhite, fontSize = 12.sp, fontFamily = FontFamily.Monospace)
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Card 2: Angle Units (Degrees vs % Grade)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(CardSurface)
+                    .border(1.dp, BorderSubtle, RoundedCornerShape(12.dp))
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = "LEVEL ANGLE UNITS",
+                    color = TextSecondary,
+                    fontSize = 11.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(if (!usePercentGrade) CardSurfaceElevated else Color.Transparent)
+                            .border(1.dp, if (!usePercentGrade) NeonEmerald else BorderSubtle, RoundedCornerShape(8.dp))
+                            .clickable { onPercentGradeToggle(false) }
+                            .padding(vertical = 10.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "DEGREES (°)",
+                            color = if (!usePercentGrade) TextWhite else TextSecondary,
+                            fontSize = 12.sp,
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(if (usePercentGrade) CardSurfaceElevated else Color.Transparent)
+                            .border(1.dp, if (usePercentGrade) NeonEmerald else BorderSubtle, RoundedCornerShape(8.dp))
+                            .clickable { onPercentGradeToggle(true) }
+                            .padding(vertical = 10.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "% GRADE",
+                            color = if (usePercentGrade) TextWhite else TextSecondary,
+                            fontSize = 12.sp,
+                            fontFamily = FontFamily.Monospace,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
+            // Card 3: About & Verification
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(CardSurface)
+                    .border(1.dp, BorderSubtle, RoundedCornerShape(12.dp))
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Text(
+                    text = "ABOUT & PRIVACY",
+                    color = TextSecondary,
+                    fontSize = 11.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+                Text(
+                    text = "Compass & Level v1.0",
+                    color = TextWhite,
+                    fontSize = 13.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "Target SDK: 36 (Android 16) | Pure Offline Utility",
+                    color = TextSecondary,
+                    fontSize = 11.sp,
+                    fontFamily = FontFamily.Monospace
+                )
+                Text(
+                    text = "Zero runtime permissions required.\nNo GPS, no background services, no tracking.",
+                    color = TextMuted,
+                    fontSize = 10.sp,
+                    fontFamily = FontFamily.Monospace,
+                    lineHeight = 14.sp
+                )
+            }
         }
     }
 }

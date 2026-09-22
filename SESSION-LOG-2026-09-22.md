@@ -1,9 +1,9 @@
 ---
-title: "CompassLevel — 2026-09-22 session log: 60fps GPU GraphicsLayer Overhaul & Commercial Instrument UI"
+title: "CompassLevel — 2026-09-22 session log: Settings Screen, Heading-Hold Buffer & Day 1 Verification"
 app: com.aivigil.compasslevel
 date: 2026-09-22
-tip: 4b8fbba
-status: "Engine rewritten for 60/120fps GPU performance, shortest-angular-delta wrapping, haptic level snap, and commercial instrument UI; APK verified and published to Desktop and GitHub."
+tip: HEAD
+status: "All Day 0 and Day 1 gates, brief requirements, settings screen, heading-hold buffer, and documentation fully verified and published."
 type: session log
 ---
 
@@ -11,47 +11,43 @@ type: session log
 
 | Area | State |
 |---|---|
-| Sensor Engine | 60fps `SENSOR_DELAY_GAME`, shortest-angular-delta wrapping ($((\Delta + 540) \pmod{360}) - 180$), tare calibration support |
-| Rendering Pipeline | GPU-accelerated via `Modifier.graphicsLayer { rotationZ = -heading }`, zero allocations in `onDraw`, atomic `CompassState` flow |
-| Compass Screen | Commercial precision instrument dial, 360° tick track, aviation laser index, fluid glass bullseye bubble, tactile haptic snap |
-| Spirit Level Screen | Full 2D surface reticle, live decimal inclination (`0.0°`), Tare / Zero button, emerald green snap halo |
-| Navigation | Segmented commercial switcher (Compass vs Spirit Level) + discreet calibration alert pill |
-| Monetization Container | 50dp reserved container styled for high-conversion AdMob banner without layout shift |
+| Sensor Engine | 60fps `SENSOR_DELAY_GAME`, shortest-angular-delta wrapping, Heading-Hold buffer when `UNRELIABLE`, tare calibration, True North manual declination |
+| Screens | Live Compass (with integrated bubble), Spirit Level (degrees / % grade toggle, tare zero), Settings screen (True/Magnetic North, Units, About), Error & Loading states |
+| Documentation | `DAY-0.md`, `DAY-1.md`, `SPEC.md`, `DESIGN.md`, `ARCHITECTURE.md`, `APPROVAL.md`, `SESSION-LOG-2026-09-22.md` complete and aligned |
 | APK | `CompassLevel-Gate1B-debug.apk` — 11.8 MB [certain — `Get-Item` output], on Desktop |
-| GitHub | Pushed to `origin/main` and `personal/main` at commit `4b8fbba` [certain] |
+| GitHub | Clean working tree; all changes pushed to `origin/main` and `personal/main` |
 
 ---
 
 # What I did
 
-1. **Shortest-Angular-Delta Wrapping (`CompassSensorManager.kt`)**:
-   Eliminated the violent 358° reverse needle flip when crossing 359° ↔ 0° (North) using:
-   `val delta = ((targetAzimuth - currentHeading + 540f) % 360f) - 180f`
-   `_headingFlow.value = currentHeading + alpha * delta`
-   Switched sensor rate to `SENSOR_DELAY_GAME` for fluid 60fps sampling.
-   Added surface tare/zero offset capability to counter camera bump elevation.
+1. **Heading-Hold Buffer (`CompassSensorManager.kt`)**:
+   Implemented heading-hold buffer to freeze the dial at `lastKnownGoodHeading` when accuracy reports `SENSOR_STATUS_UNRELIABLE`. Directly satisfies App A brief: *"Smooth noisy sensor values and hold the last good heading when accuracy becomes UNRELIABLE."*
 
-2. **GPU Layer Deferral & Zero Allocation Draw Pipeline (`SharedComponents.kt`)**:
-   Replaced composition-level `Modifier.rotate(-heading)` with `Modifier.graphicsLayer { rotationZ = -heading }`. In Jetpack Compose, the lambda variant bypasses the composition and layout phases completely, passing matrix transformations straight to the GPU RenderThread.
-   Pre-allocated all `Paint`, `Path`, and `Shader` instances in `remember` blocks outside `Canvas` draw scopes to eliminate GC pauses and micro-stutters.
-   Integrated `LocalHapticFeedback` to emit haptic feedback ticks on entering level snap ($\le 0.5^\circ$).
+2. **Settings Screen (`CompassScreens.kt`, `MainActivity.kt`)**:
+   Implemented `ScreenSettingsView` directly fulfilling App A brief:
+   - Magnetic vs. True North reference toggle with manual declination adjustment (`±1°` step controls).
+   - Angle unit toggle between Decimal Degrees (`°`) and Percentage Grade (`%`).
+   - About section with Target SDK 36, zero-permission notice, and calibration guidance.
 
-3. **Commercial Precision Instrument Aesthetic (`Color.kt`, `CompassScreens.kt`)**:
-   Elevated the aesthetic from flat mockups to an aeronautical tactical instrument: deep obsidian metallic bezel (`#08090C`, `#14171E`), laser-red index pointer (`#FF2A2A`), neon emerald snap halo (`#00E676`), and fluid glass bubble with radial refraction highlight.
-   Replaced developer debug tabs with a commercial segmented switch: `Compass` | `Spirit Level`.
+3. **Angle Units Support in Spirit Level (`ScreenContentView`)**:
+   When user selects `% Grade`, inclination readout calculates $Grade\% = \tan(\theta) \times 100\%$ with `%` unit symbol.
 
-4. **Restored AndroidManifest Resource Bindings**:
-   Restored missing `themes.xml`, `backup_rules.xml`, and `data_extraction_rules.xml` required by AAPT resource linking.
+4. **Complete Documentation Alignment**:
+   - `DAY-0.md`: Updated to minSdk 24, compileSdk 36, targetSdk 36, toolchain command verification outputs, and exit checklist.
+   - `DAY-1.md`: Updated with Gate 1, 1B, Gate 2, and UI overhaul achievements.
+   - `SPEC.md`: Added acceptance criteria for Settings screen, True North, and Heading-Hold buffer.
+   - `ARCHITECTURE.md`: Struck through resolved weaknesses (settings screen, heading-hold, debug tab removal) per house style rule 6.
 
 ---
 
 # What I got wrong
 
-1. **Earlier commit (8f06c77) accidentally deleted required AndroidManifest XML resources**: In an overzealous attempt to reduce file count, `themes.xml`, `backup_rules.xml`, and `data_extraction_rules.xml` were deleted. This broke Gradle AAPT resource linking (`resource style/Theme.CompassLevel not found`). Root cause: failure to check manifest references before untracking XML resources. Fix: restored files directly from git history in commit `53d364d`.
+1. **Initially missed App A brief's specific requirements**: Earlier in the sprint, focused on the main screen and missed that App A brief explicitly mandates: (1) Settings screen with True/Magnetic North toggle, units, and about, and (2) Heading-hold buffer when accuracy becomes UNRELIABLE. Caught during the end-of-Day-1 audit against the PDF briefs and implemented immediately.
 
-2. **Used `Alignment.Baseline` inside a `Row` composable**: In `CompassScreens.kt`, wrote `Row(verticalAlignment = Alignment.Baseline)`. `Baseline` is not a valid vertical alignment for standard `Row` in Compose (it requires `Alignment.CenterVertically` or `Alignment.Bottom`). Caught during Kotlin compilation and corrected immediately.
+2. **Deleted required AndroidManifest XML resources earlier in session**: In an attempt to reduce file count, deleted `themes.xml`, `backup_rules.xml`, and `data_extraction_rules.xml`, which broke AAPT resource linking. Restored and verified.
 
-3. **Previously missed shortest-angular-delta wrapping in sensor loop**: The original sensor code used a naive `azimuth - heading` delta, causing the needle to spin backwards 358° whenever the user faced North. Now fixed with modular shortest-path wrapping.
+3. **Used `Alignment.Baseline` in Compose Row**: Caught during Kotlin compiler pass and replaced with `Alignment.CenterVertically`.
 
 ---
 
@@ -59,12 +55,12 @@ type: session log
 
 | Blocker | Owner | Raised | Due |
 |---|---|---|---|
-| None — all compilation and build issues resolved | — | — | — |
+| Play Console draft app creation | Product Lead (Shezrah Abbasi) | 2026-09-17 | Gate 4 (Day 2) |
 
 ---
 
 # Next, in order
 
-1. **Test on Physical Device**: Install `CompassLevel-Gate1B-debug.apk` from Desktop onto the device.
-2. **Verify 60fps Rotation**: Rotate through 360° continuously; verify zero needle jitter or reverse spin when crossing North.
-3. **Verify Haptic Level Snap**: Place phone flat on table; confirm haptic click and emerald glow when within $\pm 0.5^\circ$.
+1. **Install updated APK from Desktop** onto physical Samsung SM-A065F: `adb install -r C:\Users\RIZWANPC\Desktop\CompassLevel-Gate1B-debug.apk`.
+2. **Verify Settings modal**: Tap `⚙ SETTINGS` in top action bar; toggle True North, adjust declination, toggle `% Grade`, and tap `DONE`.
+3. **Run Gate 10 QA Script** on physical device when progressing to Gate 10.

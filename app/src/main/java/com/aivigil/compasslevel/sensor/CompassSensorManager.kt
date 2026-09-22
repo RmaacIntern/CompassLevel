@@ -17,7 +17,10 @@ data class CompassState(
     val pitch: Float = 0f,
     val roll: Float = 0f,
     val isLevel: Boolean = false,
-    val isReliable: Boolean = true
+    val isReliable: Boolean = true,
+    val isTrueNorth: Boolean = false,
+    val declination: Float = 0f,
+    val usePercentGrade: Boolean = false
 )
 
 class CompassSensorManager(context: Context) : SensorEventListener {
@@ -54,6 +57,14 @@ class CompassSensorManager(context: Context) : SensorEventListener {
     private var rawPitch = 0f
     private var rawRoll = 0f
 
+    // Last known good heading for "Heading Hold" buffer when accuracy drops to UNRELIABLE
+    private var lastKnownGoodHeading = 0f
+
+    // Settings
+    private var isTrueNorth = false
+    private var declination = 0f
+    private var usePercentGrade = false
+
     // Smoothing factor (EMA alpha): 0.18f provides snappy 60fps response with zero jitter
     private val alpha = 0.18f
 
@@ -80,6 +91,20 @@ class CompassSensorManager(context: Context) : SensorEventListener {
         tareRoll = 0f
     }
 
+    fun setTrueNorth(enabled: Boolean, manualDeclination: Float = 0f) {
+        isTrueNorth = enabled
+        declination = manualDeclination
+        _compassState.value = _compassState.value.copy(
+            isTrueNorth = enabled,
+            declination = manualDeclination
+        )
+    }
+
+    fun setUsePercentGrade(enabled: Boolean) {
+        usePercentGrade = enabled
+        _compassState.value = _compassState.value.copy(usePercentGrade = enabled)
+    }
+
     override fun onSensorChanged(event: SensorEvent) {
         if (event.sensor.type == Sensor.TYPE_ROTATION_VECTOR) {
             SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
@@ -88,15 +113,27 @@ class CompassSensorManager(context: Context) : SensorEventListener {
             var targetAzimuth = Math.toDegrees(orientationAngles[0].toDouble()).toFloat()
             if (targetAzimuth < 0) targetAzimuth += 360f
 
+            // Apply declination if True North enabled
+            if (isTrueNorth) {
+                targetAzimuth = (targetAzimuth + declination + 360f) % 360f
+            }
+
             rawPitch = Math.toDegrees(orientationAngles[1].toDouble()).toFloat()
             rawRoll = Math.toDegrees(orientationAngles[2].toDouble()).toFloat()
 
-            // Shortest-angular-delta wrapping to eliminate 359° - 0° snap spin
-            val currentHeading = _headingFlow.value
-            val delta = ((targetAzimuth - currentHeading + 540f) % 360f) - 180f
-            var smoothedHeading = currentHeading + alpha * delta
-            if (smoothedHeading < 0f) smoothedHeading += 360f
-            if (smoothedHeading >= 360f) smoothedHeading -= 360f
+            // Heading Hold Buffer: If accuracy is UNRELIABLE, hold last known good heading
+            val targetHeading = if (_isReliable.value) {
+                // Shortest-angular-delta wrapping to eliminate 359° - 0° snap spin
+                val currentHeading = _headingFlow.value
+                val delta = ((targetAzimuth - currentHeading + 540f) % 360f) - 180f
+                var smoothed = currentHeading + alpha * delta
+                if (smoothed < 0f) smoothed += 360f
+                if (smoothed >= 360f) smoothed -= 360f
+                lastKnownGoodHeading = smoothed
+                smoothed
+            } else {
+                lastKnownGoodHeading
+            }
 
             val compensatedPitch = rawPitch - tarePitch
             val compensatedRoll = rawRoll - tareRoll
@@ -104,17 +141,20 @@ class CompassSensorManager(context: Context) : SensorEventListener {
             val smoothedPitch = _pitchFlow.value + alpha * (compensatedPitch - _pitchFlow.value)
             val smoothedRoll = _rollFlow.value + alpha * (compensatedRoll - _rollFlow.value)
 
-            _headingFlow.value = smoothedHeading
+            _headingFlow.value = targetHeading
             _pitchFlow.value = smoothedPitch
             _rollFlow.value = smoothedRoll
 
             val isLevel = abs(smoothedPitch) <= 0.5f && abs(smoothedRoll) <= 0.5f
             _compassState.value = CompassState(
-                heading = smoothedHeading,
+                heading = targetHeading,
                 pitch = smoothedPitch,
                 roll = smoothedRoll,
                 isLevel = isLevel,
-                isReliable = _isReliable.value
+                isReliable = _isReliable.value,
+                isTrueNorth = isTrueNorth,
+                declination = declination,
+                usePercentGrade = usePercentGrade
             )
         } else if (event.sensor.type == Sensor.TYPE_ACCELEROMETER) {
             val ax = event.values[0]
@@ -139,7 +179,10 @@ class CompassSensorManager(context: Context) : SensorEventListener {
                 pitch = smoothedPitch,
                 roll = smoothedRoll,
                 isLevel = isLevel,
-                isReliable = _isReliable.value
+                isReliable = _isReliable.value,
+                isTrueNorth = isTrueNorth,
+                declination = declination,
+                usePercentGrade = usePercentGrade
             )
         }
     }

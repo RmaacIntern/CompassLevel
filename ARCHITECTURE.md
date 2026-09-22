@@ -78,19 +78,18 @@ No AdMob, no Firebase, no Maps SDK, no network dependency. The app is fully offl
 
 ## Known weaknesses
 
-1. **Debug tab bar ships in release builds.** `StateSelectorBar` exposes `Loading / Content / Empty / Error / Live` to all users. Gate before any store submission: either remove the bar entirely (single Live mode) or gate it behind `BuildConfig.DEBUG`. [certain — visible in the current APK]
+1. ~~**Debug tab bar ships in release builds.** `StateSelectorBar` exposes `Loading / Content / Empty / Error / Live` to all users.~~ *[Resolved 2026-09-22: Replaced with commercial `SegmentedModeSelector` (Compass vs Spirit Level) and modal settings screen.]*
 
-2. **Alpha filter coefficient α = 0.15 is hard-coded.** On slow phones, `SENSOR_DELAY_UI` (~60 ms) combined with α = 0.15 gives adequate smoothing. On fast phones at higher delivery rates the filter is slightly over-smooth. Fine for v1; move to a per-device adaptive filter if compass lag complaints arrive.
+2. **Alpha filter coefficient α = 0.18 with `SENSOR_DELAY_GAME`.** Upgraded to 60fps high-rate sampling with shortest-angular-delta wrapping ($((\Delta + 540) \pmod{360}) - 180$) to eliminate 359°–0° snap spin. Fine for v1; move to a per-device adaptive filter if compass lag complaints arrive.
 
-3. **No heading-hold buffer when accuracy drops to `UNRELIABLE`.** SPEC.md specified: "Dial freezes at last known good heading when accuracy drops to UNRELIABLE." The current `ScreenErrorView` replaces the dial entirely. The dial is not frozen — it is hidden. Functionally acceptable; not what the spec said.
+3. ~~**No heading-hold buffer when accuracy drops to `UNRELIABLE`.** SPEC.md specified: "Dial freezes at last known good heading when accuracy drops to UNRELIABLE."~~ *[Resolved 2026-09-22: `CompassSensorManager` implements a heading-hold buffer locking `lastKnownGoodHeading` when accuracy drops to UNRELIABLE.]*
 
 4. **`isMinifyEnabled = false` in release build type.** APK is not minified or obfuscated. Fine for a debug build; must be set to `true` before a Play Store release to reduce APK size and obscure class names.
 
-5. **Settings screen not built.** SPEC.md Day 2 items (Magnetic vs. True North toggle, manual declination input, sensor health dialog) are unimplemented. Sensor always reads magnetic north.
+5. ~~**Settings screen not built.** SPEC.md Day 2 items (Magnetic vs. True North toggle, manual declination input, sensor health dialog) are unimplemented.~~ *[Resolved 2026-09-22: Implemented `ScreenSettingsView` with Magnetic vs. True North toggle, manual declination adjust, angle units (% grade vs degrees), and zero-permission privacy notice.]*
 
 ## What I would change with more time
 
-- Add a `SettingsRepository` backed by `DataStore<Preferences>` for the True/False North toggle and declination value; wire it into `CompassSensorManager`.
-- Replace the tab-based screen router with a proper `NavHost` so the debug screens are only reachable in debug builds.
-- Add a `heading-hold` buffer: when `isReliable` goes false, freeze `_headingFlow.value` at its last value rather than switching away from the dial entirely.
+- Add a `SettingsRepository` backed by `DataStore<Preferences>` to persist True/False North and declination across reboots (currently preserved in in-memory StateFlow).
+- Add full integration with AdMob SDK once AdMob App ID is issued by console lead.
 - Write a proper `@Preview` for each screen composable so designers can iterate without building.

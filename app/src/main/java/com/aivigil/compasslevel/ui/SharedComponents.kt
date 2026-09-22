@@ -42,7 +42,8 @@ import kotlin.math.sin
 @Composable
 fun TopActionBar(
     isReliable: Boolean = true,
-    onCalibrateClick: () -> Unit = {}
+    onCalibrateClick: () -> Unit = {},
+    onSettingsClick: () -> Unit = {}
 ) {
     Row(
         modifier = Modifier
@@ -63,31 +64,52 @@ fun TopActionBar(
                     .background(if (isReliable) NeonEmerald else AmberWarning)
             )
             Text(
-                text = "PRECISION COMPASS & LEVEL",
+                text = "COMPASS & LEVEL",
                 color = TextPrimary,
-                fontSize = 12.sp,
+                fontSize = 13.sp,
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.5.sp
             )
         }
 
-        if (!isReliable) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            if (!isReliable) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(GlowAmberSoft)
+                        .border(0.5.dp, AmberWarning, RoundedCornerShape(6.dp))
+                        .clickable { onCalibrateClick() }
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = "CALIBRATE",
+                        color = AmberWarning,
+                        fontSize = 10.sp,
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(GlowAmberSoft)
-                    .border(0.5.dp, AmberWarning, RoundedCornerShape(6.dp))
-                    .clickable { onCalibrateClick() }
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(CardSurface)
+                    .border(1.dp, BorderStrong, RoundedCornerShape(8.dp))
+                    .clickable { onSettingsClick() }
                     .padding(horizontal = 10.dp, vertical = 4.dp)
             ) {
                 Text(
-                    text = "CALIBRATE",
-                    color = AmberWarning,
-                    fontSize = 10.sp,
+                    text = "⚙ SETTINGS",
+                    color = TextSecondary,
+                    fontSize = 11.sp,
                     fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
+                    fontWeight = FontWeight.Bold
                 )
             }
         }

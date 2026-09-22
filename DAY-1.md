@@ -1,26 +1,37 @@
-﻿# Day 1: Sensor Engine & Responsive Co-axial UI
+# Day 1: Decide, Design & Architecture
 
-## 1. Sensor Implementation (`sensor/CompassSensorManager.kt`)
-- Integrated `TYPE_ROTATION_VECTOR` with matrix rotation (`getRotationMatrixFromVector`) and orientation calculation (`getOrientation`).
-- Integrated low-pass alpha filter smoothing to eliminate sensor jitter on raw accelerometer/magnetic vectors.
-- State preservation: Heading locks and retains the last reliable coordinate when sensor reports `SENSOR_STATUS_UNRELIABLE`.
-- Accelerometer fallback calculation for pure spirit level when rotation vector hardware is unavailable.
+**Date:** 2026-09-18 / 2026-09-22  
+**App:** `com.aivigil.compasslevel`  
+**Platform:** Target SDK 36, Compile SDK 36, Min SDK 24  
+**Hardware Verified:** Samsung SM-A065F [certain — `APPROVAL.md`]  
 
-## 2. Co-axial UI Architecture (`ui/`)
-- **Visual Design Tokens (`Color.kt`):** OLED pure black (`#000000`), subtle borders (`#1C1C1E`), high-contrast cardinal accents (North Red `#FF3B30`), and spirit level target illumination (`#34C759`).
-- **Responsive Layout (`CompassScreens.kt`):** 
-  - Uses `safeDrawingPadding()` to avoid notch, status bar, and gesture navigation bar clipping.
-  - Dynamically calculates dial diameter via `BoxWithConstraints` to support compact and tall screen densities without pushing pill cards or ads off-screen.
-- **Dial & Bubble Mathematics (`SharedComponents.kt`):**
-  - Clockwise compass rose ($N = 0^\circ, E = 90^\circ, S = 180^\circ, W = 270^\circ$).
-  - Target reticle illuminated in accent green when $\vert{}pitch\vert{} < 4^\circ$ and $\vert{}roll\vert{} < 4^\circ$.
-  - Fixed persistent 320×50 ad banner anchored at the bottom edge.
+---
 
-## 3. State Handling
-- `ScreenLoading`: Hardware sensor initialization spinner.
-- `ScreenContent`: Live interactive dial and spirit level.
-- `ScreenFallbackLevel`: Accelerometer-only spirit level with reticle and tap-to-zero.
-- `ScreenUnreliable`: Visual lock badge and figure-8 calibration instructions.
+## 1. Gate 1 — Feature Specification (`SPEC.md`)
+- Author `SPEC.md` strictly aligned with App A Brief (`Two App Briefs — Compass & Level`).
+- Core feature set: Unified 60fps compass dial, live heading in degrees, concentric fluid spirit level, and Settings screen.
+- Explicit non-features: Zero runtime permissions, zero GPS, zero network requests, zero background services, no degree accuracy claims.
+- Monetization boundary: 50dp reserved bottom container, no interstitial ads.
 
-## 4. Gate 1B Wireframe Deliverable
-- Interactive 4-state visual board generated and saved to `docs/wireframe_board.html`.
+---
+
+## 2. Gate 1B — Multi-State UI & Design (`DESIGN.md`)
+All five mandatory UI states implemented and verified inside Jetpack Compose:
+1. **Loading State:** Radial glow, branded title, and leading dot spinner.
+2. **Content State (Compass):** 360° precision tick track, laser-red North index, fluid glass bullseye bubble, tactile level snap ($\le 0.5^\circ$), decimal pitch/roll readouts.
+3. **Content State (Spirit Level):** Dual-axis reticle level, tare zero calibration button, percentage grade / degree display.
+4. **Fallback / Empty State:** Graceful transition when sensor motion is idle or rotation vector hardware is absent.
+5. **Error / Calibration State:** Pulsing amber ring warning with figure-8 motion recalibration guide.
+6. **Settings Screen:** True/Magnetic North toggle with manual declination, angle units toggle (Degrees vs. % Grade), and About dialog.
+
+**Sign-off:** Shezrah Abbasi (Product Lead) formally signed off on Gate 1 & Gate 1B (recorded in `APPROVAL.md`).
+
+---
+
+## 3. Gate 2 — Architecture & Repository (`ARCHITECTURE.md`)
+- Single Activity (`MainActivity.kt`), Compose Material3 UI.
+- Sensor pipeline (`CompassSensorManager.kt`) utilizing `TYPE_ROTATION_VECTOR` and fallback `TYPE_ACCELEROMETER`.
+- High-performance GPU rendering via `Modifier.graphicsLayer { rotationZ = -heading }` lambda.
+- "Heading Hold" buffer: Holds last known reliable heading when sensor accuracy drops to `UNRELIABLE`.
+- Shortest-angular-delta wrapping ($((\Delta + 540) \pmod{360}) - 180$) to eliminate 359° ↔ 0° snap spin.
+- Repository hygiene: IDE blobs, machine-specific files, and test bloat purged.
