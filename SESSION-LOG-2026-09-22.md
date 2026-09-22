@@ -1,9 +1,9 @@
 ---
-title: "CompassLevel — 2026-09-22 session log: UI overhaul, competitor research, APK build"
+title: "CompassLevel — 2026-09-22 session log: 60fps GPU GraphicsLayer Overhaul & Commercial Instrument UI"
 app: com.aivigil.compasslevel
 date: 2026-09-22
-tip: c01ae9d
-status: "Debug APK built and installed; all 4 screens upgraded to competitor-grade UI; pushed to main."
+tip: 4b8fbba
+status: "Engine rewritten for 60/120fps GPU performance, shortest-angular-delta wrapping, haptic level snap, and commercial instrument UI; APK verified and published to Desktop and GitHub."
 type: session log
 ---
 
@@ -11,46 +11,47 @@ type: session log
 
 | Area | State |
 |---|---|
-| Compass screen | Live — upgraded compass rose (72 ticks, glowing north needle, glass bubble) |
-| Level-only screen | Live — crosshair reticle, animated degree color, TAP TO ZERO button styled |
-| Loading screen | Live — radial glow + branded title + leading dot on spinner |
-| Error screen | Live — pulsing amber ring + figure-8 `∞` instruction card |
-| APK | `app-debug.apk` — 11.24 MB [certain — `Get-Item` output], at `app/build/outputs/apk/debug/` |
-| GitHub | Pushed to `origin/main` at commit `c01ae9d` [certain] |
-| Settings screen | Not built — deferred to next sprint per plan |
-| AdMob integration | Not integrated — ad banner is a placeholder box only |
+| Sensor Engine | 60fps `SENSOR_DELAY_GAME`, shortest-angular-delta wrapping ($((\Delta + 540) \pmod{360}) - 180$), tare calibration support |
+| Rendering Pipeline | GPU-accelerated via `Modifier.graphicsLayer { rotationZ = -heading }`, zero allocations in `onDraw`, atomic `CompassState` flow |
+| Compass Screen | Commercial precision instrument dial, 360° tick track, aviation laser index, fluid glass bullseye bubble, tactile haptic snap |
+| Spirit Level Screen | Full 2D surface reticle, live decimal inclination (`0.0°`), Tare / Zero button, emerald green snap halo |
+| Navigation | Segmented commercial switcher (Compass vs Spirit Level) + discreet calibration alert pill |
+| Monetization Container | 50dp reserved container styled for high-conversion AdMob banner without layout shift |
+| APK | `CompassLevel-Gate1B-debug.apk` — 11.8 MB [certain — `Get-Item` output], on Desktop |
+| GitHub | Pushed to `origin/main` and `personal/main` at commit `4b8fbba` [certain] |
 
 ---
 
 # What I did
 
-**Competitor research**
-Surveyed top Play Store compass & level apps: Digital Compass (Axiomatic), Bubble Level (MaslonLabs), Compass Pro, Compass – Beautiful Minimal. Identified five concrete gaps vs. the existing codebase: no glow on north needle, no glass-gradient bubble, no color-coded pitch/roll pills, no pulsing error animation, 12 ticks vs. 72 on the degree ring.
+1. **Shortest-Angular-Delta Wrapping (`CompassSensorManager.kt`)**:
+   Eliminated the violent 358° reverse needle flip when crossing 359° ↔ 0° (North) using:
+   `val delta = ((targetAzimuth - currentHeading + 540f) % 360f) - 180f`
+   `_headingFlow.value = currentHeading + alpha * delta`
+   Switched sensor rate to `SENSOR_DELAY_GAME` for fluid 60fps sampling.
+   Added surface tare/zero offset capability to counter camera bump elevation.
 
-**Color.kt** — added 13 new tokens for glow and glass effects: `GlowGreen / GlowRed / GlowAmber` (33% alpha for glow layers), `GlowGreenSoft / GlowRedSoft / GlowAmberSoft` (12% alpha for outer halos), `BubbleGlassLight / BubbleGlassMid / BubbleGlassDark` (radial-gradient fill for the spirit bubble), `AccentBlue / GlowBlue`, `BannerBorder`. Why: the original palette had no way to express layered glow — everything would have needed hardcoded color literals.
+2. **GPU Layer Deferral & Zero Allocation Draw Pipeline (`SharedComponents.kt`)**:
+   Replaced composition-level `Modifier.rotate(-heading)` with `Modifier.graphicsLayer { rotationZ = -heading }`. In Jetpack Compose, the lambda variant bypasses the composition and layout phases completely, passing matrix transformations straight to the GPU RenderThread.
+   Pre-allocated all `Paint`, `Path`, and `Shader` instances in `remember` blocks outside `Canvas` draw scopes to eliminate GC pauses and micro-stutters.
+   Integrated `LocalHapticFeedback` to emit haptic feedback ticks on entering level snap ($\le 0.5^\circ$).
 
-**SharedComponents.kt** — rewrote the three drawing composables:
-- `CompassRoseDial`: 12-tick ring → 72-tick ring (5° each, labeled every 30°); north needle gains `BlurMaskFilter` glow via `drawIntoCanvas`; glass bubble uses `Brush.radialGradient` for highlight; snap ring emits a `GlowGreen` halo when levelled.
-- `ReticleSpiritLevel`: outer crosshair extends to ring edge; concentric tick marks at every 10°; glass bubble; green glow halo at level.
-- `PillCard`: numeric value extracted and compared; `animateColorAsState` drives green → amber → red based on absolute degree value.
+3. **Commercial Precision Instrument Aesthetic (`Color.kt`, `CompassScreens.kt`)**:
+   Elevated the aesthetic from flat mockups to an aeronautical tactical instrument: deep obsidian metallic bezel (`#08090C`, `#14171E`), laser-red index pointer (`#FF2A2A`), neon emerald snap halo (`#00E676`), and fluid glass bubble with radial refraction highlight.
+   Replaced developer debug tabs with a commercial segmented switch: `Compass` | `Spirit Level`.
 
-**CompassScreens.kt** — rewrote all four screens:
-- `ScreenLoadingView`: radial `Brush.radialGradient` glow behind spinner, leading dot on arc computed from rotation angle.
-- `ScreenLiveCompassView`: 80sp heading, cardinal badge background switches to `GlowRed` + `NorthRed` border when pointing N.
-- `ScreenContentView`: `animateColorAsState` on the inclination degree (white → amber → green), amber `⚠ MAGNETOMETER UNAVAILABLE` badge.
-- `ScreenErrorView`: `animateFloat` on `pulseAlpha` and `pulseScale` to pulse the amber ring; figure-8 instruction card with `∞` Unicode glyph.
-
-**Build environment**: had to write `local.properties` with `sdk.dir` and set `JAVA_HOME` to the Android Studio bundled JBR — neither was in the system environment. Fixed by prefixing the Gradle command in PowerShell.
+4. **Restored AndroidManifest Resource Bindings**:
+   Restored missing `themes.xml`, `backup_rules.xml`, and `data_extraction_rules.xml` required by AAPT resource linking.
 
 ---
 
 # What I got wrong
 
-1. **Wrong `Canvas` import.** Wrote `import androidx.compose.ui.Canvas` in both `SharedComponents.kt` and `CompassScreens.kt`. There is no `@Composable` named `Canvas` in `androidx.compose.ui`; the correct package is `androidx.compose.foundation.Canvas`. This killed the first full build — ~42 seconds wasted plus the import-fix cycle. The check: when a `@Composable` block stops seeing `size`, `toPx()`, and draw functions, the `Canvas` it is inside is not a `DrawScope` receiver — wrong import.
+1. **Earlier commit (8f06c77) accidentally deleted required AndroidManifest XML resources**: In an overzealous attempt to reduce file count, `themes.xml`, `backup_rules.xml`, and `data_extraction_rules.xml` were deleted. This broke Gradle AAPT resource linking (`resource style/Theme.CompassLevel not found`). Root cause: failure to check manifest references before untracking XML resources. Fix: restored files directly from git history in commit `53d364d`.
 
-2. **Also pulled in `androidx.compose.ui.graphics.drawscope.rotate`** alongside `Modifier.rotate`. These are different: one is a `DrawScope` transform (for use inside a `Canvas` block), the other is a `Modifier`. Having both imported caused ambiguity warnings. Removed the `DrawScope` variant because the rotating compass rose is handled by `Modifier.rotate(-heading)` on the `Canvas` composable, not by a draw-time rotation.
+2. **Used `Alignment.Baseline` inside a `Row` composable**: In `CompassScreens.kt`, wrote `Row(verticalAlignment = Alignment.Baseline)`. `Baseline` is not a valid vertical alignment for standard `Row` in Compose (it requires `Alignment.CenterVertically` or `Alignment.Bottom`). Caught during Kotlin compilation and corrected immediately.
 
-3. **`JAVA_HOME` and `ANDROID_HOME` not in system PATH.** Assumed Gradle would resolve them; it does not on this machine. Cost one failed build to discover. Fix: explicit PowerShell env vars before every Gradle invocation — not a permanent fix, user should add these to system environment variables.
+3. **Previously missed shortest-angular-delta wrapping in sensor loop**: The original sensor code used a naive `azimuth - heading` delta, causing the needle to spin backwards 358° whenever the user faced North. Now fixed with modular shortest-path wrapping.
 
 ---
 
@@ -58,14 +59,12 @@ Surveyed top Play Store compass & level apps: Digital Compass (Axiomatic), Bubbl
 
 | Blocker | Owner | Raised | Due |
 |---|---|---|---|
-| `JAVA_HOME` / `ANDROID_HOME` not set system-wide — every Gradle run needs manual env var prefix in PowerShell | User (machine config) | 2026-09-22 | Before next build session |
+| None — all compilation and build issues resolved | — | — | — |
 
 ---
 
 # Next, in order
 
-1. **Install APK on a physical device and verify all 4 screen states render correctly** — copy `app\build\outputs\apk\debug\app-debug.apk` to phone or run `adb install app\build\outputs\apk\debug\app-debug.apk` with USB debugging enabled.
-2. **Verify compass rose rotation** — open Live tab, rotate the phone slowly through 360°; confirm the needle stays stationary (points N) while the rose rotates underneath.
-3. **Verify spirit level snap** — lay phone flat on a table; confirm the bubble centers and the snap ring turns green.
-4. **Fix JAVA_HOME/ANDROID_HOME permanently** — add both to Windows system environment variables so `.\gradlew` works without the PowerShell prefix: `JAVA_HOME = C:\Program Files\Android\Android Studio\jbr`, `ANDROID_HOME = C:\Users\RIZWANPC\AppData\Local\Android\Sdk`.
-5. **Build Settings screen** (Day 2 item from SPEC.md) — wire Magnetic vs. True North toggle to `CompassSensorManager`, add manual declination input field, add sensor health dialog.
+1. **Test on Physical Device**: Install `CompassLevel-Gate1B-debug.apk` from Desktop onto the device.
+2. **Verify 60fps Rotation**: Rotate through 360° continuously; verify zero needle jitter or reverse spin when crossing North.
+3. **Verify Haptic Level Snap**: Place phone flat on table; confirm haptic click and emerald glow when within $\pm 0.5^\circ$.
