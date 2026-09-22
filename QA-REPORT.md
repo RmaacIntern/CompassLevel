@@ -25,7 +25,7 @@
 | 8 | Settings modal open & dismiss | PASS | PASS | PASS | Modal slides in smoothly; dismisses with DONE button or backdrop tap |
 | 9 | True North vs. Magnetic North toggle | PASS | PASS | PASS | Heading shifts correctly by declination offset |
 | 10 | Manual declination step adjust ($\pm 1^\circ$) | PASS | PASS | PASS | Increment and decrement buttons update offset cleanly |
-| 11 | Angle units toggle (Degrees `°` vs. `% Grade`) | PASS | PASS | PASS | Grade formula $	an(	heta) 	imes 100\%$ updates numeric labels |
+| 11 | Angle units toggle (Degrees `°` vs. `% Grade`) | PASS | PASS | PASS | Grade formula $\tan(\theta) \times 100\%$ updates numeric labels |
 | 12 | Magnetic anomaly / `UNRELIABLE` accuracy handling | PASS | PASS | PASS | Heading-Hold buffer freezes heading at `lastKnownGoodHeading` |
 | 13 | Screen orientation changes & lifecycle pause/resume | PASS | PASS | PASS | Sensor unregisters on `onPause` to preserve battery; resumes on `onResume` |
 | 14 | AdMob isolated bottom container (50dp) | PASS | PASS | PASS | Ad placeholder occupies exact reserved space without overlapping UI |
