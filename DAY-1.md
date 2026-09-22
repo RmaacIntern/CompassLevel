@@ -3,7 +3,7 @@
 **Date:** 2026-09-18 / 2026-09-22  
 **App:** `com.aivigil.compasslevel`  
 **Platform:** Target SDK 36, Compile SDK 36, Min SDK 24  
-**Hardware Verified:** Samsung SM-A065F [certain — `APPROVAL.md`]  
+**Hardware Verified:** Vivo Y27s (`V2322`) & Samsung SM-A065F [certain — `APPROVAL.md`]  
 
 ---
 

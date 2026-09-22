@@ -14,7 +14,7 @@ type: post-mortem
 **Project:** Compass & Level (`com.aivigil.compasslevel`)  
 **Lead Developer:** Rizwan (`riz5y`)  
 **Product Lead:** Shezrah Abbasi  
-**Target Hardware:** Samsung Galaxy A06 (`SM-A065F`), Android 14 (API 34) [certain — `APPROVAL.md`]  
+**Target Hardware:** Vivo Y27s (`V2322`, Android 14) & Samsung Galaxy A06 (`SM-A065F`, Android 14) [certain — `QA-REPORT.md`]  
 **Target Platform:** Android 16 (SDK 36), Compile SDK 36, Min SDK 24 [certain — `app/build.gradle.kts`]  
 **Current Upstream Status:** Synced with `origin` (`RmaacIntern/CompassLevel`) and `personal` (`riz5y/CompassLevel`)  
 
@@ -195,7 +195,10 @@ A detailed benchmark was conducted against the top 4 Play Store compass and leve
 
 ## Current Status & Verification
 
-- **Build Status:** `./gradlew assembleDebug` returns `BUILD SUCCESSFUL` in 4s [certain].
-- **Binary Status:** `CompassLevel-Gate1B-debug.apk` (11.8 MB) verified on Desktop and sideloaded via ADB onto Samsung Galaxy A06 (`SM-A065F`).
-- **Repository Cleanliness:** 45 tracked files, working tree clean, zero uncommitted changes.
+- **Build Status:** `./gradlew assembleDebug` returns `BUILD SUCCESSFUL` in 2s [certain].
+- **Binary Status:** `CompassLevel-Gate1B-debug.apk` (11.8 MB) verified on Desktop and sideloaded via ADB onto physical hardware.
+- **Physical Devices Tested:**
+  - **Vivo Y27s (`V2322`)**: 6.64" FHD+ 90Hz (1080x2388, 395 ppi), Qualcomm Snapdragon 680, hardware E-Compass magnetometer.
+  - **Samsung Galaxy A06 (`SM-A065F`)**: 6.7" HD+ 60Hz (720x1600, 262 ppi), MediaTek Helio G85, sensor fusion fallback.
+- **Repository Cleanliness:** 46 tracked files, working tree clean, zero uncommitted changes.
 - **Dual-Remote Alignment:** Up-to-date with `origin/main` (`RmaacIntern/CompassLevel`) and `personal/main` (`riz5y/CompassLevel`).

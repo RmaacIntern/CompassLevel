@@ -5,7 +5,7 @@
 - **Date:** September 18, 2026
 - **Status:** APPROVED
 - **Target Platform:** Target SDK 36 (Android 16) | Compile SDK 36 | Min SDK 24 (Android 7.0)
-- **Verified Hardware:** Samsung SM-A065F
+- **Verified Hardware:** Vivo Y27s (`V2322`) & Samsung Galaxy A06 (`SM-A065F`) [certain — `QA-REPORT.md`]
 
 ## Review Summary
 1. **Gate 1 (SPEC.md):** Approved. Scope locked strictly to offline sensor utility; zero GPS/camera/map permissions enforced. Platform configurations updated to Target & Compile SDK 36.

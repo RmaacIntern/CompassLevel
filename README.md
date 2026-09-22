@@ -42,7 +42,7 @@ $env:Path = "$env:JAVA_HOME\bin;" + $env:Path
 # 4. Binary output location (11.8 MB [certain])
 # .\app\build\outputs\apk\debug\app-debug.apk
 
-# 5. Sideload directly to connected physical hardware (Samsung SM-A065F)
+# 5. Sideload directly to connected physical hardware (Vivo Y27s or Samsung Galaxy A06)
 adb install -r .\app\build\outputs\apk\debug\app-debug.apk
 ```
 
@@ -83,6 +83,7 @@ adb install -r .\app\build\outputs\apk\debug\app-debug.apk
 - **[`DESIGN.md`](DESIGN.md):** Gate 1B UI states & visual hierarchy specification.
 - **[`ARCHITECTURE.md`](ARCHITECTURE.md):** Gate 2 technical decisions, data flows, and known weaknesses.
 - **[`APPROVAL.md`](APPROVAL.md):** Product Lead (Shezrah Abbasi) design sign-off records.
+- **[`QA-REPORT.md`](QA-REPORT.md):** Gate 10 dual physical device verification report (Vivo Y27s & Samsung Galaxy A06).
 - **[`DAY-0.md`](DAY-0.md):** Day 0 toolchain setup & audit checklist.
 - **[`DAY-1.md`](DAY-1.md):** Day 1 specification, design, and architecture audit log.
 - **[`SESSION-LOG-2026-09-22.md`](SESSION-LOG-2026-09-22.md):** Daily session log with `# What I got wrong`.

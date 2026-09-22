@@ -39,5 +39,5 @@
 | AdMob & Firebase briefed on no-click rule | PASS | Understand never click own ads or trigger invalid traffic |
 | `.gitignore` contains §6.2 block | PASS | Verified no `.jks`, `.keystore`, or `google-services.json` tracked |
 | `./gradlew assembleDebug` returns BUILD SUCCESSFUL | PASS | Verified command-line build in 34s |
-| Debug APK running on real phone | PASS | Verified on Samsung SM-A065F (Day 0 test app) |
+| Debug APK running on real phone | PASS | Verified on Samsung SM-A065F & Vivo Y27s (V2322) |
 | Read INTERN-PROGRAM.md §3 | PASS | Zero unauthorized releases, no committing signing keys |
