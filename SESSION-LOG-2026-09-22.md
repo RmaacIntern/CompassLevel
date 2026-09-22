@@ -2,8 +2,8 @@
 title: "CompassLevel — 2026-09-22 session log: Settings Screen, Heading-Hold Buffer & Day 1 Verification"
 app: com.aivigil.compasslevel
 date: 2026-09-22
-tip: b6d9220
-status: "Enlarged 330dp compass dial & 18dp 3D fluid spirit bubble implemented; APK verified on Desktop; pushed to GitHub."
+tip: 46e26dd
+status: "Master POST-MORTEM.md & README.md created; 330dp dial & 18dp 3D fluid bubble verified; pushed to GitHub."
 type: session log
 ---
 
@@ -15,8 +15,9 @@ type: session log
 | Center Spirit Bubble | Enlarged by >60% (18dp bubble, 136dp center level) with 3D fluid refraction shader and neon emerald level aura |
 | Full Level Mode | Reticle expanded to 330dp with 22dp fluid bubble and tare zero button |
 | Settings & Sensor | True/Magnetic North, Declination adjust, Units toggle (% Grade vs °), Heading-Hold buffer when `UNRELIABLE` |
+| Master Post-Mortem | `POST-MORTEM.md` & `README.md` synthesized covering Phases 1–4 [certain] |
 | APK | `CompassLevel-Gate1B-debug.apk` — 11.8 MB [certain], on Desktop |
-| GitHub | Pushed to `origin/main` and `personal/main` at commit `b6d9220` [certain] |
+| GitHub | Pushed to `origin/main` and `personal/main` at commit `46e26dd` [certain] |
 
 ---
 
@@ -45,6 +46,10 @@ type: session log
    - `DAY-1.md`: Updated with Gate 1, 1B, Gate 2, and UI overhaul achievements.
    - `SPEC.md`: Added acceptance criteria for Settings screen, True North, and Heading-Hold buffer.
    - `ARCHITECTURE.md`: Struck through resolved weaknesses (settings screen, heading-hold, debug tab removal) per house style rule 6.
+
+5. **Master Engineering Post-Mortem & Repository README**:
+   - Authored `POST-MORTEM.md` consolidating Day 0 setup, Day 1 early gate violations, repo bloat, and today's 60fps GPU overhaul, competitor benchmark, and shortest-angular-delta sensor pipeline.
+   - Authored `README.md` per Gate 15 standard providing exact build commands, key file references, and gotchas.
 
 ---
 
