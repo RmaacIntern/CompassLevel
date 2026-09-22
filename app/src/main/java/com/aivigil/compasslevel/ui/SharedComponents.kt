@@ -246,7 +246,7 @@ fun PrecisionPillCard(
     val valueColor = when {
         absVal <= 0.5f -> NeonEmerald
         absVal <= 5.0f -> AmberWarning
-        else           -> TextPrimary
+        else           -> TextWhite
     }
 
     val formattedValue = String.format("%+.1f°", valueDegrees)
@@ -256,22 +256,22 @@ fun PrecisionPillCard(
             .clip(RoundedCornerShape(16.dp))
             .background(CardSurface)
             .border(1.dp, BorderStrong, RoundedCornerShape(16.dp))
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 20.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Text(
             text = label,
-            color = TextSecondary,
-            fontSize = 11.sp,
+            color = Color(0xFFA5ACB8),
+            fontSize = 12.sp,
             fontFamily = FontFamily.Monospace,
-            fontWeight = FontWeight.SemiBold,
+            fontWeight = FontWeight.Bold,
             letterSpacing = 1.sp
         )
         Text(
             text = formattedValue,
             color = valueColor,
-            fontSize = 15.sp,
+            fontSize = 17.sp,
             fontFamily = FontFamily.Monospace,
             fontWeight = FontWeight.Bold
         )
@@ -307,16 +307,20 @@ fun CompassRoseDial(
         }
     }
 
-    val cardinals = remember {
+    val dialLabels = remember {
         listOf(
             Triple("N", 0.0, true),
-            Triple("NE", 45.0, false),
+            Triple("30", 30.0, false),
+            Triple("60", 60.0, false),
             Triple("E", 90.0, true),
-            Triple("SE", 135.0, false),
+            Triple("120", 120.0, false),
+            Triple("150", 150.0, false),
             Triple("S", 180.0, true),
-            Triple("SW", 225.0, false),
+            Triple("210", 210.0, false),
+            Triple("240", 240.0, false),
             Triple("W", 270.0, true),
-            Triple("NW", 315.0, false)
+            Triple("300", 300.0, false),
+            Triple("330", 330.0, false)
         )
     }
 
@@ -363,7 +367,7 @@ fun CompassRoseDial(
                 val center = Offset(cx, cy)
                 val trackRadius = 154.dp.toPx()
                 val innerTrackRadius = 126.dp.toPx()
-                val labelRadius = 108.dp.toPx()
+                val labelRadius = 106.dp.toPx()
 
                 // Tick ring boundary
                 drawCircle(color = BorderSubtle.copy(alpha = 0.7f), radius = trackRadius, center = center, style = Stroke(0.5.dp.toPx()))
@@ -383,8 +387,8 @@ fun CompassRoseDial(
                     }
                     val tickColor = when {
                         isSuperMajor -> TextWhite
-                        isMajor      -> TextSecondary
-                        else         -> BorderStrong.copy(alpha = 0.6f)
+                        isMajor      -> Color(0xFFC0C7D5)
+                        else         -> BorderStrong.copy(alpha = 0.7f)
                     }
                     val strokeW = if (isSuperMajor) 1.5.dp.toPx() else 0.75.dp.toPx()
 
@@ -401,18 +405,22 @@ fun CompassRoseDial(
                     )
                 }
 
-                // Draw Cardinal labels using pre-allocated textPaint
-                cardinals.forEach { (label, deg, isCardinal) ->
+                // Draw Cardinal & Degree labels using pre-allocated textPaint
+                dialLabels.forEach { (label, deg, isCardinal) ->
                     val rad = Math.toRadians(deg - 90.0)
                     val x = (cx + labelRadius * cos(rad)).toFloat()
                     val y = (cy + labelRadius * sin(rad)).toFloat()
 
-                    textPaint.textSize = if (label == "N") 18.sp.toPx() else if (isCardinal) 14.sp.toPx() else 11.sp.toPx()
+                    textPaint.textSize = when (label) {
+                        "N" -> 20.sp.toPx()
+                        "E", "S", "W" -> 16.sp.toPx()
+                        else -> 11.sp.toPx()
+                    }
                     textPaint.typeface = Typeface.create(Typeface.MONOSPACE, if (isCardinal) Typeface.BOLD else Typeface.NORMAL)
                     textPaint.color = when (label) {
-                        "N"  -> android.graphics.Color.parseColor("#FF3B30")
+                        "N" -> android.graphics.Color.parseColor("#FF3B30")
                         "E", "S", "W" -> android.graphics.Color.WHITE
-                        else -> android.graphics.Color.parseColor("#8E95A5")
+                        else -> android.graphics.Color.parseColor("#CBD2E1")
                     }
 
                     val textY = y - ((textPaint.descent() + textPaint.ascent()) / 2f)

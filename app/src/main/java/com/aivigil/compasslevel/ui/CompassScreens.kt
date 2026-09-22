@@ -161,14 +161,14 @@ fun ScreenLiveCompassView(
             ) {
                 Text(
                     text = "${heading.toInt()}",
-                    fontSize = 72.sp,
+                    fontSize = 76.sp,
                     fontWeight = FontWeight.Bold,
                     color = TextWhite,
                     fontFamily = FontFamily.Monospace
                 )
                 Text(
                     text = "°",
-                    fontSize = 36.sp,
+                    fontSize = 38.sp,
                     fontWeight = FontWeight.Bold,
                     color = LaserRed,
                     fontFamily = FontFamily.Monospace
@@ -185,15 +185,15 @@ fun ScreenLiveCompassView(
                         color = if (isNorth) LaserRed else BorderStrong,
                         shape = RoundedCornerShape(8.dp)
                     )
-                    .padding(horizontal = 16.dp, vertical = 4.dp)
+                    .padding(horizontal = 18.dp, vertical = 5.dp)
             ) {
                 Text(
                     text = cardinal,
-                    color = if (isNorth) LaserRed else TextPrimary,
-                    fontSize = 14.sp,
+                    color = if (isNorth) LaserRed else TextWhite,
+                    fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
                     fontFamily = FontFamily.Monospace,
-                    letterSpacing = 2.sp
+                    letterSpacing = 2.5.sp
                 )
             }
         }
@@ -266,14 +266,14 @@ fun ScreenContentView(
             ) {
                 Text(
                     text = displayValue,
-                    fontSize = 72.sp,
+                    fontSize = 76.sp,
                     fontWeight = FontWeight.Bold,
                     color = angleColor,
                     fontFamily = FontFamily.Monospace
                 )
                 Text(
                     text = unitSymbol,
-                    fontSize = 36.sp,
+                    fontSize = 38.sp,
                     fontWeight = FontWeight.Bold,
                     color = angleColor,
                     fontFamily = FontFamily.Monospace
@@ -282,14 +282,14 @@ fun ScreenContentView(
 
             Text(
                 text = if (isLevel) "PERFECTLY LEVEL" else "SURFACE INCLINATION",
-                color = if (isLevel) NeonEmerald else TextSecondary,
-                fontSize = 12.sp,
+                color = if (isLevel) NeonEmerald else Color(0xFFC0C7D5),
+                fontSize = 13.sp,
                 fontFamily = FontFamily.Monospace,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.5.sp
             )
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             // Tap to Zero (Tare) Button
             Box(
@@ -298,12 +298,12 @@ fun ScreenContentView(
                     .background(CardSurface)
                     .border(1.dp, if (isLevel) NeonEmerald else BorderStrong, RoundedCornerShape(10.dp))
                     .clickable { onTareClick() }
-                    .padding(horizontal = 18.dp, vertical = 8.dp)
+                    .padding(horizontal = 22.dp, vertical = 10.dp)
             ) {
                 Text(
                     text = "+ TARE / ZERO SURFACE",
-                    color = if (isLevel) NeonEmerald else TextPrimary,
-                    fontSize = 11.sp,
+                    color = if (isLevel) NeonEmerald else TextWhite,
+                    fontSize = 12.sp,
                     fontFamily = FontFamily.Monospace,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp
