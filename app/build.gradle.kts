@@ -3,6 +3,10 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+base {
+    archivesName.set("CompassLevel-v1.0")
+}
+
 android {
     namespace = "com.aivigil.compasslevel"
     compileSdk = 36
