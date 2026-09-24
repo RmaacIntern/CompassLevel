@@ -471,7 +471,8 @@ fun ScreenContentView(
                 Box(
                     modifier = Modifier
                         .width(42.dp)
-                        .height(230.dp)
+                        .fillMaxHeight(0.85f)
+                        .heightIn(min = 150.dp, max = 240.dp)
                         .clip(RoundedCornerShape(21.dp))
                         .background(skin.dialBackground)
                         .border(1.5.dp, skin.ringBorder, RoundedCornerShape(21.dp)),
@@ -545,18 +546,19 @@ fun ScreenContentView(
             }
 
             // Center Circular Bullseye Level with 12 Degree Ticks
-            Box(
+            BoxWithConstraints(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight(),
                 contentAlignment = Alignment.Center
             ) {
-                Canvas(modifier = Modifier.size(240.dp)) {
+                val bullseyeSize = minOf(maxWidth * 0.96f, maxHeight * 0.96f, 250.dp)
+                Canvas(modifier = Modifier.size(bullseyeSize)) {
                     val cx = size.width / 2f
                     val cy = size.height / 2f
-                    val outerR = 115.dp.toPx()
-                    val snapR = 32.dp.toPx()
-                    val bubbleR = 18.dp.toPx()
+                    val outerR = (size.width / 2f) - 6.dp.toPx()
+                    val snapR = outerR * 0.28f
+                    val bubbleR = outerR * 0.16f
                     val maxTravel = outerR - bubbleR - 4.dp.toPx()
 
                     // Outer Bezel

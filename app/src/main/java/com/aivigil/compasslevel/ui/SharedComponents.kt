@@ -56,9 +56,24 @@ fun GoogleTopAppBar(
     onNotesClick: () -> Unit = {},
     onSkinsClick: () -> Unit = {},
     onCalibrateClick: () -> Unit = {},
-    onSettingsClick: () -> Unit = {}
+    onSettingsClick: () -> Unit = {},
+    onHomeClick: (() -> Unit)? = null
 ) {
     TopAppBar(
+        navigationIcon = {
+            if (onHomeClick != null) {
+                IconButton(
+                    onClick = onHomeClick,
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Home,
+                        contentDescription = "Return to Intro Screen",
+                        tint = skin.primaryAccent
+                    )
+                }
+            }
+        },
         title = {
             Row(
                 verticalAlignment = Alignment.CenterVertically,

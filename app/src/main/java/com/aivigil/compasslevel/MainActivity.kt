@@ -3,6 +3,7 @@ package com.aivigil.compasslevel
 import android.Manifest
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -50,6 +51,9 @@ class MainActivity : ComponentActivity() {
                 val systemDark = isSystemInDarkTheme()
                 var isDarkMode by remember { mutableStateOf(systemDark) }
 
+                var isIntroActive by remember { mutableStateOf(true) }
+                var showExitDialog by remember { mutableStateOf(false) }
+
                 var currentMode by remember { mutableStateOf("Compass") }
                 var currentSkin by remember { mutableStateOf(AppSkin.CLASSIC_EMERALD) }
                 val activePalette = remember(currentSkin, isDarkMode) { currentSkin.palette(isDarkMode) }
@@ -95,161 +99,203 @@ class MainActivity : ComponentActivity() {
 
                 val notesList by notesManager.notes.collectAsState()
 
-                Scaffold(
-                    topBar = {
-                        GoogleTopAppBar(
-                            title = currentMode.uppercase(),
-                            isReliable = sensorState.isReliable,
-                            notesCount = notesList.size,
-                            skin = activePalette,
-                            isDarkMode = isDarkMode,
-                            onThemeToggle = { isDarkMode = !isDarkMode },
-                            onNotesClick = { showNotesModal = true },
-                            onSkinsClick = { showSkinsModal = true },
-                            onCalibrateClick = { showCalibrationModal = true },
-                            onSettingsClick = { showSettingsModal = true }
-                        )
+                // Intercept hardware and gesture back navigation to display exit prompt with 5-star rating
+                BackHandler(enabled = true) {
+                    if (showNotesModal || showSkinsModal || showSettingsModal || showCalibrationModal) {
+                        showNotesModal = false
+                        showSkinsModal = false
+                        showSettingsModal = false
+                        showCalibrationModal = false
+                    } else if (!isIntroActive) {
+                        // User trying to exit from measurement dashboard
+                        showExitDialog = true
+                    } else {
+                        // User trying to exit from introductory screen
+                        showExitDialog = true
+                    }
+                }
+
+                AnimatedContent(
+                    targetState = isIntroActive,
+                    transitionSpec = {
+                        fadeIn(animationSpec = tween(260)) togetherWith fadeOut(animationSpec = tween(260))
                     },
-                    bottomBar = {
-                        GoogleNavigationBar(
-                            selectedMode = currentMode,
+                    label = "IntroToDashboardTransition"
+                ) { introActive ->
+                    if (introActive) {
+                        // ── SCREEN: INTRODUCTORY / START SCREEN WITH AD MONETIZATION SLOT ──
+                        ScreenIntroView(
+                            hasMagnetometer = sensorManager.hasMagnetometer,
+                            hasLocationPermission = hasLocationPermission,
                             skin = activePalette,
-                            onModeSelected = { mode ->
-                                currentMode = mode
-                                if (mode == "Location" && locationManager.hasLocationPermission()) {
+                            onStartTool = { selectedMode ->
+                                currentMode = selectedMode
+                                isIntroActive = false
+                                if (selectedMode == "Location" && locationManager.hasLocationPermission()) {
                                     locationManager.startLocationUpdates()
                                 }
                             }
                         )
-                    },
-                    containerColor = activePalette.appBackground
-                ) { innerPadding ->
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding)
-                    ) {
-                        AnimatedContent(
-                            targetState = currentMode,
-                            transitionSpec = {
-                                fadeIn(animationSpec = tween(220)) togetherWith fadeOut(animationSpec = tween(220))
+                    } else {
+                        // ── SCREEN: MAIN INSTRUMENT DASHBOARD ──────────────────────────────
+                        Scaffold(
+                            topBar = {
+                                GoogleTopAppBar(
+                                    title = currentMode.uppercase(),
+                                    isReliable = sensorState.isReliable,
+                                    notesCount = notesList.size,
+                                    skin = activePalette,
+                                    isDarkMode = isDarkMode,
+                                    onThemeToggle = { isDarkMode = !isDarkMode },
+                                    onNotesClick = { showNotesModal = true },
+                                    onSkinsClick = { showSkinsModal = true },
+                                    onCalibrateClick = { showCalibrationModal = true },
+                                    onSettingsClick = { showSettingsModal = true },
+                                    onHomeClick = { isIntroActive = true }
+                                )
                             },
-                            label = "ScreenTransition"
-                        ) { mode ->
-                            when (mode) {
-                                "Level" -> {
-                                    ScreenContentView(
-                                        pitch = if (sensorState.isAngleLocked) sensorState.lockedPitch else sensorState.pitch,
-                                        roll = if (sensorState.isAngleLocked) sensorState.lockedRoll else sensorState.roll,
-                                        isLevel = sensorState.isLevel,
-                                        isAngleLocked = sensorState.isAngleLocked,
-                                        usePercentGrade = sensorState.usePercentGrade,
-                                        onTareClick = { sensorManager.tare() },
-                                        onAngleLockToggle = { sensorManager.toggleAngleLock() },
-                                        onFlashlightToggle = { flashlightManager.toggleFlashlight() },
-                                        isFlashlightOn = isFlashlightOn,
-                                        onSaveNoteClick = { p, r ->
-                                            notesManager.saveNote(
-                                                type = "Level",
-                                                title = "Dual-Axis Level Alignment",
-                                                primaryValue = "X: ${String.format(Locale.US, "%.1f", r)}°, Y: ${String.format(Locale.US, "%.1f", p)}°",
-                                                secondaryDetails = if (sensorState.isLevel) "PERFECT LEVEL (0.0° Tolerance)" else "Inclination Detected"
-                                            )
-                                        },
-                                        skin = activePalette
-                                    )
-                                }
-                                "Clinometer" -> {
-                                    ScreenClinometerView(
-                                        pitch = if (sensorState.isAngleLocked) sensorState.lockedElevation else sensorState.elevation,
-                                        roll = if (sensorState.isAngleLocked) sensorState.lockedCameraRoll else sensorState.cameraRoll,
-                                        isLocked = sensorState.isAngleLocked,
-                                        onLockToggle = { sensorManager.toggleAngleLock() },
-                                        onSaveNoteClick = { p, slope ->
-                                            notesManager.saveNote(
-                                                type = "Clinometer",
-                                                title = "AR Clinometer Sight",
-                                                primaryValue = "Elevation: ${String.format(Locale.US, "%+.1f", p)}°",
-                                                secondaryDetails = "Grade/Slope: ${String.format(Locale.US, "%.1f", slope)}%"
-                                            )
-                                        },
-                                        onFlashlightToggle = { flashlightManager.toggleFlashlight() },
-                                        isFlashlightOn = isFlashlightOn,
-                                        skin = activePalette
-                                    )
-                                }
-                                "Location" -> {
-                                    ScreenLocationView(
-                                        locationData = locationState,
-                                        compassHeading = sensorState.heading,
-                                        skin = activePalette,
-                                        hasLocationPermission = hasLocationPermission,
-                                        onRequestPermission = {
-                                            locationPermissionLauncher.launch(
-                                                arrayOf(
-                                                    Manifest.permission.ACCESS_FINE_LOCATION,
-                                                    Manifest.permission.ACCESS_COARSE_LOCATION
-                                                )
-                                            )
-                                        },
-                                        onOpenSettings = {
-                                            locationManager.openLocationSettings()
-                                        },
-                                        onForceRefresh = {
-                                            locationManager.forceRefresh()
-                                        },
-                                        onSaveToNotes = { summary, details ->
-                                            notesManager.saveNote(
-                                                type = "Location",
-                                                title = "GPS Waypoint",
-                                                primaryValue = summary,
-                                                secondaryDetails = details
+                            bottomBar = {
+                                GoogleNavigationBar(
+                                    selectedMode = currentMode,
+                                    skin = activePalette,
+                                    onModeSelected = { mode ->
+                                        currentMode = mode
+                                        if (mode == "Location" && locationManager.hasLocationPermission()) {
+                                            locationManager.startLocationUpdates()
+                                        }
+                                    }
+                                )
+                            },
+                            containerColor = activePalette.appBackground
+                        ) { innerPadding ->
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(innerPadding)
+                            ) {
+                                AnimatedContent(
+                                    targetState = currentMode,
+                                    transitionSpec = {
+                                        fadeIn(animationSpec = tween(220)) togetherWith fadeOut(animationSpec = tween(220))
+                                    },
+                                    label = "ScreenTransition"
+                                ) { mode ->
+                                    when (mode) {
+                                        "Level" -> {
+                                            ScreenContentView(
+                                                pitch = if (sensorState.isAngleLocked) sensorState.lockedPitch else sensorState.pitch,
+                                                roll = if (sensorState.isAngleLocked) sensorState.lockedRoll else sensorState.roll,
+                                                isLevel = sensorState.isLevel,
+                                                isAngleLocked = sensorState.isAngleLocked,
+                                                usePercentGrade = sensorState.usePercentGrade,
+                                                onTareClick = { sensorManager.tare() },
+                                                onAngleLockToggle = { sensorManager.toggleAngleLock() },
+                                                onFlashlightToggle = { flashlightManager.toggleFlashlight() },
+                                                isFlashlightOn = isFlashlightOn,
+                                                onSaveNoteClick = { p, r ->
+                                                    notesManager.saveNote(
+                                                        type = "Level",
+                                                        title = "Dual-Axis Level Alignment",
+                                                        primaryValue = "X: ${String.format(Locale.US, "%.1f", r)}°, Y: ${String.format(Locale.US, "%.1f", p)}°",
+                                                        secondaryDetails = if (sensorState.isLevel) "PERFECT LEVEL (0.0° Tolerance)" else "Inclination Detected"
+                                                    )
+                                                },
+                                                skin = activePalette
                                             )
                                         }
-                                    )
-                                }
-                                else -> {
-                                    if (!sensorManager.hasMagnetometer) {
-                                        ScreenContentView(
-                                            pitch = if (sensorState.isAngleLocked) sensorState.lockedPitch else sensorState.pitch,
-                                            roll = if (sensorState.isAngleLocked) sensorState.lockedRoll else sensorState.roll,
-                                            isLevel = sensorState.isLevel,
-                                            isAngleLocked = sensorState.isAngleLocked,
-                                            usePercentGrade = sensorState.usePercentGrade,
-                                            onTareClick = { sensorManager.tare() },
-                                            onAngleLockToggle = { sensorManager.toggleAngleLock() },
-                                            onFlashlightToggle = { flashlightManager.toggleFlashlight() },
-                                            isFlashlightOn = isFlashlightOn,
-                                            onSaveNoteClick = { p, r ->
-                                                notesManager.saveNote(
-                                                    type = "Level",
-                                                    title = "Dual-Axis Level Alignment",
-                                                    primaryValue = "X: ${String.format(Locale.US, "%.1f", r)}°, Y: ${String.format(Locale.US, "%.1f", p)}°",
-                                                    secondaryDetails = if (sensorState.isLevel) "PERFECT LEVEL" else "Inclination Detected"
+                                        "Clinometer" -> {
+                                            ScreenClinometerView(
+                                                pitch = if (sensorState.isAngleLocked) sensorState.lockedElevation else sensorState.elevation,
+                                                roll = if (sensorState.isAngleLocked) sensorState.lockedCameraRoll else sensorState.cameraRoll,
+                                                isLocked = sensorState.isAngleLocked,
+                                                onLockToggle = { sensorManager.toggleAngleLock() },
+                                                onSaveNoteClick = { p, slope ->
+                                                    notesManager.saveNote(
+                                                        type = "Clinometer",
+                                                        title = "AR Clinometer Sight",
+                                                        primaryValue = "Elevation: ${String.format(Locale.US, "%+.1f", p)}°",
+                                                        secondaryDetails = "Grade/Slope: ${String.format(Locale.US, "%.1f", slope)}%"
+                                                    )
+                                                },
+                                                onFlashlightToggle = { flashlightManager.toggleFlashlight() },
+                                                isFlashlightOn = isFlashlightOn,
+                                                skin = activePalette
+                                            )
+                                        }
+                                        "Location" -> {
+                                            ScreenLocationView(
+                                                locationData = locationState,
+                                                compassHeading = sensorState.heading,
+                                                skin = activePalette,
+                                                hasLocationPermission = hasLocationPermission,
+                                                onRequestPermission = {
+                                                    locationPermissionLauncher.launch(
+                                                        arrayOf(
+                                                            Manifest.permission.ACCESS_FINE_LOCATION,
+                                                            Manifest.permission.ACCESS_COARSE_LOCATION
+                                                        )
+                                                    )
+                                                },
+                                                onOpenSettings = {
+                                                    locationManager.openLocationSettings()
+                                                },
+                                                onForceRefresh = {
+                                                    locationManager.forceRefresh()
+                                                },
+                                                onSaveToNotes = { summary, details ->
+                                                    notesManager.saveNote(
+                                                        type = "Location",
+                                                        title = "GPS Waypoint",
+                                                        primaryValue = summary,
+                                                        secondaryDetails = details
+                                                    )
+                                                }
+                                            )
+                                        }
+                                        else -> {
+                                            if (!sensorManager.hasMagnetometer) {
+                                                ScreenContentView(
+                                                    pitch = if (sensorState.isAngleLocked) sensorState.lockedPitch else sensorState.pitch,
+                                                    roll = if (sensorState.isAngleLocked) sensorState.lockedRoll else sensorState.roll,
+                                                    isLevel = sensorState.isLevel,
+                                                    isAngleLocked = sensorState.isAngleLocked,
+                                                    usePercentGrade = sensorState.usePercentGrade,
+                                                    onTareClick = { sensorManager.tare() },
+                                                    onAngleLockToggle = { sensorManager.toggleAngleLock() },
+                                                    onFlashlightToggle = { flashlightManager.toggleFlashlight() },
+                                                    isFlashlightOn = isFlashlightOn,
+                                                    onSaveNoteClick = { p, r ->
+                                                        notesManager.saveNote(
+                                                            type = "Level",
+                                                            title = "Dual-Axis Level Alignment",
+                                                            primaryValue = "X: ${String.format(Locale.US, "%.1f", r)}°, Y: ${String.format(Locale.US, "%.1f", p)}°",
+                                                            secondaryDetails = if (sensorState.isLevel) "PERFECT LEVEL" else "Inclination Detected"
+                                                        )
+                                                    },
+                                                    skin = activePalette
                                                 )
-                                            },
-                                            skin = activePalette
-                                        )
-                                    } else {
-                                        ScreenLiveCompassView(
-                                            heading = if (sensorState.isBearingLocked) sensorState.lockedHeading else sensorState.heading,
-                                            pitch = sensorState.pitch,
-                                            roll = sensorState.roll,
-                                            isLevel = sensorState.isLevel,
-                                            isBearingLocked = sensorState.isBearingLocked,
-                                            lockedHeading = sensorState.lockedHeading,
-                                            onBearingLockToggle = { sensorManager.toggleBearingLock() },
-                                            onSaveNoteClick = { h, card ->
-                                                notesManager.saveNote(
-                                                    type = "Compass",
-                                                    title = "Compass Bearing $card",
-                                                    primaryValue = "${h.toInt()}° $card",
-                                                    secondaryDetails = "Pitch: ${sensorState.pitch.toInt()}°, Roll: ${sensorState.roll.toInt()}°"
+                                            } else {
+                                                ScreenLiveCompassView(
+                                                    heading = if (sensorState.isBearingLocked) sensorState.lockedHeading else sensorState.heading,
+                                                    pitch = sensorState.pitch,
+                                                    roll = sensorState.roll,
+                                                    isLevel = sensorState.isLevel,
+                                                    isBearingLocked = sensorState.isBearingLocked,
+                                                    lockedHeading = sensorState.lockedHeading,
+                                                    onBearingLockToggle = { sensorManager.toggleBearingLock() },
+                                                    onSaveNoteClick = { h, card ->
+                                                        notesManager.saveNote(
+                                                            type = "Compass",
+                                                            title = "Compass Bearing $card",
+                                                            primaryValue = "${h.toInt()}° $card",
+                                                            secondaryDetails = "Pitch: ${sensorState.pitch.toInt()}°, Roll: ${sensorState.roll.toInt()}°"
+                                                        )
+                                                    },
+                                                    skin = activePalette,
+                                                    locationData = locationState
                                                 )
-                                            },
-                                            skin = activePalette,
-                                            locationData = locationState
-                                        )
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -331,6 +377,15 @@ class MainActivity : ComponentActivity() {
                     CalibrationDialog(
                         skin = activePalette,
                         onDismiss = { showCalibrationModal = false }
+                    )
+                }
+
+                // ── EXIT APP CONFIRMATION PROMPT WITH 5-STAR RATING ──────────
+                if (showExitDialog) {
+                    ExitAppDialog(
+                        skin = activePalette,
+                        onDismiss = { showExitDialog = false },
+                        onConfirmExit = { finishAffinity() }
                     )
                 }
             }
