@@ -7,9 +7,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -1176,6 +1180,8 @@ fun SettingsBottomSheet(
     onResetTare: () -> Unit = {},
     isSoundEnabled: Boolean = true,
     onSoundToggle: (Boolean) -> Unit = {},
+    isHapticsEnabled: Boolean = true,
+    onHapticsToggle: (Boolean) -> Unit = {},
     onClose: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -1190,9 +1196,10 @@ fun SettingsBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 8.dp)
-                .padding(bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 6.dp)
+                .padding(bottom = 36.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             // Header
             Row(
@@ -1200,14 +1207,41 @@ fun SettingsBottomSheet(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "SETTINGS & CALIBRATION",
-                    color = skin.textPrimary,
-                    fontSize = 17.sp,
-                    fontFamily = FontFamily.Default,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.5.sp
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(skin.primaryAccent.copy(alpha = 0.15f))
+                            .border(1.dp, skin.primaryAccent.copy(alpha = 0.4f), RoundedCornerShape(10.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Tune,
+                            contentDescription = null,
+                            tint = skin.primaryAccent,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    Column {
+                        Text(
+                            text = "SETTINGS & SENSORS",
+                            color = skin.textPrimary,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.5.sp
+                        )
+                        Text(
+                            text = "Preferences & Instrument Calibration",
+                            color = skin.textSecondary,
+                            fontSize = 11.sp
+                        )
+                    }
+                }
+
                 IconButton(
                     onClick = onClose,
                     modifier = Modifier
@@ -1224,21 +1258,20 @@ fun SettingsBottomSheet(
                 }
             }
 
-            // Card 0: Appearance / Theme (Light vs Dark)
+            // Card 1: Appearance / Theme (Light vs Dark)
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(14.dp))
                     .background(skin.cardBackground)
                     .border(1.dp, skin.cardBorder, RoundedCornerShape(14.dp))
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(
-                    text = "APPEARANCE",
+                    text = "APPEARANCE MODE",
                     color = skin.textSecondary,
                     fontSize = 11.sp,
-                    fontFamily = FontFamily.Default,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp
                 )
@@ -1251,7 +1284,7 @@ fun SettingsBottomSheet(
                         modifier = Modifier
                             .weight(1f)
                             .clip(RoundedCornerShape(10.dp))
-                            .background(if (!isDarkMode) skin.primaryAccent.copy(alpha = 0.15f) else Color.Transparent)
+                            .background(if (!isDarkMode) skin.primaryAccent.copy(alpha = 0.15f) else skin.cardElevated)
                             .border(1.dp, if (!isDarkMode) skin.primaryAccent else skin.cardBorder, RoundedCornerShape(10.dp))
                             .clickable { onThemeToggle(false) }
                             .padding(vertical = 10.dp),
@@ -1271,7 +1304,6 @@ fun SettingsBottomSheet(
                                 text = "LIGHT",
                                 color = if (!isDarkMode) skin.primaryAccent else skin.textSecondary,
                                 fontSize = 12.sp,
-                                fontFamily = FontFamily.Default,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -1281,7 +1313,7 @@ fun SettingsBottomSheet(
                         modifier = Modifier
                             .weight(1f)
                             .clip(RoundedCornerShape(10.dp))
-                            .background(if (isDarkMode) skin.primaryAccent.copy(alpha = 0.15f) else Color.Transparent)
+                            .background(if (isDarkMode) skin.primaryAccent.copy(alpha = 0.15f) else skin.cardElevated)
                             .border(1.dp, if (isDarkMode) skin.primaryAccent else skin.cardBorder, RoundedCornerShape(10.dp))
                             .clickable { onThemeToggle(true) }
                             .padding(vertical = 10.dp),
@@ -1301,7 +1333,6 @@ fun SettingsBottomSheet(
                                 text = "DARK",
                                 color = if (isDarkMode) skin.primaryAccent else skin.textSecondary,
                                 fontSize = 12.sp,
-                                fontFamily = FontFamily.Default,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -1309,21 +1340,20 @@ fun SettingsBottomSheet(
                 }
             }
 
-            // Card 1: North Reference
+            // Card 2: North Reference (Magnetic vs True North)
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(14.dp))
                     .background(skin.cardBackground)
                     .border(1.dp, skin.cardBorder, RoundedCornerShape(14.dp))
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(
                     text = "NORTH REFERENCE",
                     color = skin.textSecondary,
                     fontSize = 11.sp,
-                    fontFamily = FontFamily.Default,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp
                 )
@@ -1336,7 +1366,7 @@ fun SettingsBottomSheet(
                         modifier = Modifier
                             .weight(1f)
                             .clip(RoundedCornerShape(10.dp))
-                            .background(if (!isTrueNorth) skin.primaryAccent.copy(alpha = 0.15f) else Color.Transparent)
+                            .background(if (!isTrueNorth) skin.primaryAccent.copy(alpha = 0.15f) else skin.cardElevated)
                             .border(1.dp, if (!isTrueNorth) skin.primaryAccent else skin.cardBorder, RoundedCornerShape(10.dp))
                             .clickable { onTrueNorthToggle(false) }
                             .padding(vertical = 10.dp),
@@ -1346,7 +1376,6 @@ fun SettingsBottomSheet(
                             text = "MAGNETIC",
                             color = if (!isTrueNorth) skin.primaryAccent else skin.textSecondary,
                             fontSize = 12.sp,
-                            fontFamily = FontFamily.Default,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -1355,7 +1384,7 @@ fun SettingsBottomSheet(
                         modifier = Modifier
                             .weight(1f)
                             .clip(RoundedCornerShape(10.dp))
-                            .background(if (isTrueNorth) skin.primaryAccent.copy(alpha = 0.15f) else Color.Transparent)
+                            .background(if (isTrueNorth) skin.primaryAccent.copy(alpha = 0.15f) else skin.cardElevated)
                             .border(1.dp, if (isTrueNorth) skin.primaryAccent else skin.cardBorder, RoundedCornerShape(10.dp))
                             .clickable { onTrueNorthToggle(true) }
                             .padding(vertical = 10.dp),
@@ -1365,7 +1394,6 @@ fun SettingsBottomSheet(
                             text = "TRUE NORTH",
                             color = if (isTrueNorth) skin.primaryAccent else skin.textSecondary,
                             fontSize = 12.sp,
-                            fontFamily = FontFamily.Default,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -1373,57 +1401,67 @@ fun SettingsBottomSheet(
 
                 if (isTrueNorth) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(skin.cardElevated)
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "Declination: ${if (declination >= 0) "+" else ""}${declination.toInt()}°",
-                            color = skin.textPrimary,
-                            fontSize = 12.sp,
-                            fontFamily = FontFamily.Default
-                        )
+                        Column {
+                            Text(
+                                text = "Magnetic Declination",
+                                color = skin.textSecondary,
+                                fontSize = 11.sp
+                            )
+                            Text(
+                                text = "${if (declination >= 0) "+" else ""}${declination.toInt()}°",
+                                color = skin.textPrimary,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(6.dp))
-                                    .background(skin.cardElevated)
+                                    .background(skin.surfaceBackground)
                                     .border(1.dp, skin.cardBorder, RoundedCornerShape(6.dp))
                                     .clickable { onDeclinationChange(declination - 1f) }
                                     .padding(horizontal = 12.dp, vertical = 6.dp)
                             ) {
-                                Text(text = "-1°", color = skin.textPrimary, fontSize = 12.sp, fontFamily = FontFamily.Default)
+                                Text(text = "-1°", color = skin.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                             }
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(6.dp))
-                                    .background(skin.cardElevated)
+                                    .background(skin.surfaceBackground)
                                     .border(1.dp, skin.cardBorder, RoundedCornerShape(6.dp))
                                     .clickable { onDeclinationChange(declination + 1f) }
                                     .padding(horizontal = 12.dp, vertical = 6.dp)
                             ) {
-                                Text(text = "+1°", color = skin.textPrimary, fontSize = 12.sp, fontFamily = FontFamily.Default)
+                                Text(text = "+1°", color = skin.textPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
                 }
             }
 
-            // Card 2: Angle Units
+            // Card 3: Angle Units
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(14.dp))
                     .background(skin.cardBackground)
                     .border(1.dp, skin.cardBorder, RoundedCornerShape(14.dp))
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(
                     text = "LEVEL ANGLE UNITS",
                     color = skin.textSecondary,
                     fontSize = 11.sp,
-                    fontFamily = FontFamily.Default,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp
                 )
@@ -1436,7 +1474,7 @@ fun SettingsBottomSheet(
                         modifier = Modifier
                             .weight(1f)
                             .clip(RoundedCornerShape(10.dp))
-                            .background(if (!usePercentGrade) skin.primaryAccent.copy(alpha = 0.15f) else Color.Transparent)
+                            .background(if (!usePercentGrade) skin.primaryAccent.copy(alpha = 0.15f) else skin.cardElevated)
                             .border(1.dp, if (!usePercentGrade) skin.primaryAccent else skin.cardBorder, RoundedCornerShape(10.dp))
                             .clickable { onPercentGradeToggle(false) }
                             .padding(vertical = 10.dp),
@@ -1446,7 +1484,6 @@ fun SettingsBottomSheet(
                             text = "DEGREES (°)",
                             color = if (!usePercentGrade) skin.primaryAccent else skin.textSecondary,
                             fontSize = 12.sp,
-                            fontFamily = FontFamily.Default,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -1455,7 +1492,7 @@ fun SettingsBottomSheet(
                         modifier = Modifier
                             .weight(1f)
                             .clip(RoundedCornerShape(10.dp))
-                            .background(if (usePercentGrade) skin.primaryAccent.copy(alpha = 0.15f) else Color.Transparent)
+                            .background(if (usePercentGrade) skin.primaryAccent.copy(alpha = 0.15f) else skin.cardElevated)
                             .border(1.dp, if (usePercentGrade) skin.primaryAccent else skin.cardBorder, RoundedCornerShape(10.dp))
                             .clickable { onPercentGradeToggle(true) }
                             .padding(vertical = 10.dp),
@@ -1465,44 +1502,68 @@ fun SettingsBottomSheet(
                             text = "% GRADE",
                             color = if (usePercentGrade) skin.primaryAccent else skin.textSecondary,
                             fontSize = 12.sp,
-                            fontFamily = FontFamily.Default,
                             fontWeight = FontWeight.Bold
                         )
                     }
                 }
             }
 
-            // Card: Rotating Click Sound & Haptics Feedback
+            // Card 4: Audio & Tactile Feedback (Completely Decoupled)
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(14.dp))
                     .background(skin.cardBackground)
                     .border(1.dp, skin.cardBorder, RoundedCornerShape(14.dp))
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                    .padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                Text(
+                    text = "AUDIO & HAPTICS (INDEPENDENT)",
+                    color = skin.textSecondary,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+
+                // 1. Rotary Sound Switch
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "ROTATING CLICK SOUND",
-                            color = skin.textSecondary,
-                            fontSize = 11.sp,
-                            fontFamily = FontFamily.Default,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.sp
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = "Tactile ratchet clicks & haptics when rotating compass",
-                            color = skin.textSecondary.copy(alpha = 0.8f),
-                            fontSize = 10.5.sp,
-                            fontFamily = FontFamily.Default
-                        )
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (isSoundEnabled) skin.primaryAccent.copy(alpha = 0.15f) else skin.cardElevated),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = if (isSoundEnabled) Icons.AutoMirrored.Filled.VolumeUp else Icons.AutoMirrored.Filled.VolumeOff,
+                                contentDescription = null,
+                                tint = if (isSoundEnabled) skin.primaryAccent else skin.textSecondary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        Column {
+                            Text(
+                                text = "Rotating Click Sound",
+                                color = skin.textPrimary,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = "Mechanical ratchet sound as compass rotates",
+                                color = skin.textSecondary,
+                                fontSize = 11.sp
+                            )
+                        }
                     }
 
                     Switch(
@@ -1516,23 +1577,76 @@ fun SettingsBottomSheet(
                         )
                     )
                 }
+
+                HorizontalDivider(color = skin.cardBorder.copy(alpha = 0.5f), thickness = 0.8.dp)
+
+                // 2. Vibration Feedback Switch (Independent)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(34.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(if (isHapticsEnabled) skin.primaryAccent.copy(alpha = 0.15f) else skin.cardElevated),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Vibration,
+                                contentDescription = null,
+                                tint = if (isHapticsEnabled) skin.primaryAccent else skin.textSecondary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        Column {
+                            Text(
+                                text = "Vibration Feedback",
+                                color = skin.textPrimary,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                text = "Tactile haptics on degree ticks & North detent",
+                                color = skin.textSecondary,
+                                fontSize = 11.sp
+                            )
+                        }
+                    }
+
+                    Switch(
+                        checked = isHapticsEnabled,
+                        onCheckedChange = onHapticsToggle,
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = skin.primaryAccent,
+                            checkedTrackColor = skin.primaryAccent.copy(alpha = 0.35f),
+                            uncheckedThumbColor = skin.textSecondary,
+                            uncheckedTrackColor = skin.cardElevated
+                        )
+                    )
+                }
             }
 
-            // Card 3: Calibration & Hardware Diagnostics (For future calibration)
+            // Card 5: Calibration & Zero-Tare
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(14.dp))
                     .background(skin.cardBackground)
                     .border(1.dp, skin.cardBorder, RoundedCornerShape(14.dp))
-                    .padding(16.dp),
+                    .padding(14.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(
-                    text = "CALIBRATION & SENSORS",
+                    text = "CALIBRATION & ZERO-TARE",
                     color = skin.textSecondary,
                     fontSize = 11.sp,
-                    fontFamily = FontFamily.Default,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp
                 )
@@ -1553,6 +1667,7 @@ fun SettingsBottomSheet(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Row(
+                        modifier = Modifier.weight(1f),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
@@ -1567,14 +1682,12 @@ fun SettingsBottomSheet(
                                 text = "Calibrate Magnetometer",
                                 color = skin.textPrimary,
                                 fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                fontFamily = FontFamily.Default
+                                fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "Run figure-8 motion to eliminate magnetic distortion",
+                                text = "Perform figure-8 motion to eliminate magnetic bias",
                                 color = skin.textSecondary,
-                                fontSize = 11.sp,
-                                fontFamily = FontFamily.Default
+                                fontSize = 11.sp
                             )
                         }
                     }
@@ -1599,6 +1712,7 @@ fun SettingsBottomSheet(
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Row(
+                        modifier = Modifier.weight(1f),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
@@ -1613,64 +1727,75 @@ fun SettingsBottomSheet(
                                 text = "Reset Zero Level / Tare",
                                 color = skin.textPrimary,
                                 fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
-                                fontFamily = FontFamily.Default
+                                fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "Clear camera bump surface offset",
+                                text = "Clear camera bump offset and restore zero plane",
                                 color = skin.textSecondary,
-                                fontSize = 11.sp,
-                                fontFamily = FontFamily.Default
+                                fontSize = 11.sp
                             )
                         }
                     }
-                    Text(
-                        text = "RESET",
-                        color = skin.primaryAccent,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily.Default
-                    )
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(skin.primaryAccent.copy(alpha = 0.15f))
+                            .padding(horizontal = 10.dp, vertical = 5.dp)
+                    ) {
+                        Text(
+                            text = "RESET",
+                            color = skin.primaryAccent,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
 
-            // Card 4: About (Basic Info Only)
+            // Card 6: System & About
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(14.dp))
                     .background(skin.cardBackground)
                     .border(1.dp, skin.cardBorder, RoundedCornerShape(14.dp))
-                    .padding(16.dp),
+                    .padding(14.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "SYSTEM & DIAGNOSTICS",
+                        color = skin.textSecondary,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    )
+                    Text(
+                        text = "v1.2.0 Pro",
+                        color = skin.primaryAccent,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
                 Text(
-                    text = "ABOUT",
-                    color = skin.textSecondary,
-                    fontSize = 11.sp,
-                    fontFamily = FontFamily.Default,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.sp
-                )
-                Text(
-                    text = "Compass & Level",
+                    text = "Compass & Spirit Level Pro",
                     color = skin.textPrimary,
                     fontSize = 14.sp,
-                    fontFamily = FontFamily.Default,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = "Version 1.2.0 • Offline Precision Tool",
+                    text = "Sensors: Rotation Vector, Accelerometer, Magnetometer, GPS.",
                     color = skin.textSecondary,
-                    fontSize = 12.sp,
-                    fontFamily = FontFamily.Default
+                    fontSize = 11.sp
                 )
                 Text(
-                    text = "Sensors: Rotation Vector, Accelerometer, Magnetometer, GPS.\nTelemetry is processed entirely on-device.",
+                    text = "100% offline precision calculations • No data leaves device",
                     color = skin.textSecondary.copy(alpha = 0.7f),
-                    fontSize = 11.sp,
-                    fontFamily = FontFamily.Default,
-                    lineHeight = 16.sp
+                    fontSize = 10.5.sp
                 )
             }
         }
@@ -1691,6 +1816,8 @@ fun SettingsBottomSheet(
     onResetTare: () -> Unit = {},
     isSoundEnabled: Boolean = true,
     onSoundToggle: (Boolean) -> Unit = {},
+    isHapticsEnabled: Boolean = true,
+    onHapticsToggle: (Boolean) -> Unit = {},
     onClose: () -> Unit
 ) {
     SettingsBottomSheet(
@@ -1707,6 +1834,8 @@ fun SettingsBottomSheet(
         onResetTare = onResetTare,
         isSoundEnabled = isSoundEnabled,
         onSoundToggle = onSoundToggle,
+        isHapticsEnabled = isHapticsEnabled,
+        onHapticsToggle = onHapticsToggle,
         onClose = onClose
     )
 }

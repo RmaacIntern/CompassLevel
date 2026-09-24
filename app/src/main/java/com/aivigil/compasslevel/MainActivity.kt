@@ -54,13 +54,20 @@ class MainActivity : ComponentActivity() {
         val savedSkinName = prefs.getString("saved_skin", AppSkin.CLASSIC_EMERALD.name) ?: AppSkin.CLASSIC_EMERALD.name
         val initialSkin = try { AppSkin.valueOf(savedSkinName) } catch (e: Exception) { AppSkin.CLASSIC_EMERALD }
 
+        val initialSoundPref = prefs.getBoolean("compass_sound_enabled", true)
+        val initialHapticsPref = prefs.getBoolean("compass_haptics_enabled", true)
+        soundManager.setSoundEnabled(initialSoundPref)
+        soundManager.setHapticEnabled(initialHapticsPref)
+
         setContent {
             val systemDark = isSystemInDarkTheme()
             val initialDark = remember { prefs.getBoolean("saved_dark_mode", systemDark) }
             val initialSound = remember { prefs.getBoolean("compass_sound_enabled", true) }
+            val initialHaptics = remember { prefs.getBoolean("compass_haptics_enabled", true) }
             var isDarkMode by remember { mutableStateOf(initialDark) }
             var currentSkin by remember { mutableStateOf(initialSkin) }
             var isSoundEnabled by remember { mutableStateOf(initialSound) }
+            var isHapticsEnabled by remember { mutableStateOf(initialHaptics) }
 
             LaunchedEffect(isDarkMode) {
                 prefs.edit().putBoolean("saved_dark_mode", isDarkMode).apply()
@@ -73,6 +80,11 @@ class MainActivity : ComponentActivity() {
             LaunchedEffect(isSoundEnabled) {
                 prefs.edit().putBoolean("compass_sound_enabled", isSoundEnabled).apply()
                 soundManager.setSoundEnabled(isSoundEnabled)
+            }
+
+            LaunchedEffect(isHapticsEnabled) {
+                prefs.edit().putBoolean("compass_haptics_enabled", isHapticsEnabled).apply()
+                soundManager.setHapticEnabled(isHapticsEnabled)
             }
 
             CompassLevelTheme(isDarkMode = isDarkMode) {
@@ -143,9 +155,9 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                // Safe Rotary Ratchet Click Feedback for Compass Mode
-                LaunchedEffect(sensorState.heading, currentMode, isIntroActive, isSoundEnabled) {
-                    if (currentMode == "Compass" && !isIntroActive && isSoundEnabled) {
+                // Safe Rotary Ratchet Click & Haptic Feedback for Compass Mode (Decoupled)
+                LaunchedEffect(sensorState.heading, currentMode, isIntroActive, isSoundEnabled, isHapticsEnabled) {
+                    if (currentMode == "Compass" && !isIntroActive && (isSoundEnabled || isHapticsEnabled)) {
                         soundManager.onHeadingChanged(sensorState.heading)
                     }
                 }
@@ -410,6 +422,8 @@ class MainActivity : ComponentActivity() {
                         },
                         isSoundEnabled = isSoundEnabled,
                         onSoundToggle = { isSoundEnabled = it },
+                        isHapticsEnabled = isHapticsEnabled,
+                        onHapticsToggle = { isHapticsEnabled = it },
                         onClose = { showSettingsModal = false }
                     )
                 }
