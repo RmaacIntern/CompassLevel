@@ -37,7 +37,11 @@ data class CompassState(
 class CompassSensorManager(context: Context) : SensorEventListener {
 
     private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as SensorManager
-    private val rotationVectorSensor: Sensor? = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
+
+    // Support both 9-axis gyroscope fusion and geomagnetic hardware fusion for devices without a gyro
+    private val rotationVectorSensor: Sensor? =
+        sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
+            ?: sensorManager.getDefaultSensor(Sensor.TYPE_GEOMAGNETIC_ROTATION_VECTOR)
     private val accelerometer: Sensor? = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
     private val magnetometer: Sensor? = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
 
@@ -68,10 +72,21 @@ class CompassSensorManager(context: Context) : SensorEventListener {
     private val _isReliable = MutableStateFlow(true)
 
     private val rotationMatrix = FloatArray(9)
-    private val gravityValues = FloatArray(3)
-    private val geomagneticValues = FloatArray(3)
+
+    // Filter buffers for raw fallback mode (accelerometer + magnetometer)
+    private val filteredGravity = FloatArray(3)
+    private val filteredGeomagnetic = FloatArray(3)
     private var hasGravity = false
     private var hasGeomagnetic = false
+
+    // Low-pass filter coefficients: isolates static gravity and suppresses dynamic hand movement spikes
+    private val ALPHA_GRAVITY = 0.85f
+    private val ALPHA_MAGNETIC = 0.82f
+
+    // First sample initialization flags
+    private var isHeadingInitialized = false
+    private var isPitchInitialized = false
+    private var isRollInitialized = false
 
     // Tare offsets for zero surface compensation
     private var tarePitch = 0f
@@ -101,28 +116,28 @@ class CompassSensorManager(context: Context) : SensorEventListener {
     private var lastEmittedCameraRoll = 0f
     private var lastEmittedIsLevel = false
 
-    // Adaptive Angle Filter with Deadband
-    private fun filterAngle(current: Float, target: Float, deadband: Float): Float {
+    // Continuous adaptive angle filter without stick-slip deadband
+    private fun filterAngle(current: Float, target: Float): Float {
         val delta = target - current
         val absDelta = abs(delta)
-        if (absDelta < deadband) return current
+        if (absDelta < 0.02f) return current
         val alpha = when {
-            absDelta >= 10f -> 0.76f
-            absDelta <= 1.0f -> 0.18f + (absDelta / 1.0f) * 0.14f
-            else -> 0.32f + ((absDelta - 1.0f) / 9.0f) * 0.44f
+            absDelta >= 10f -> 0.75f
+            absDelta <= 1.0f -> 0.16f + (absDelta / 1.0f) * 0.16f
+            else -> 0.32f + ((absDelta - 1.0f) / 9.0f) * 0.43f
         }
         return current + alpha * delta
     }
 
-    // Adaptive Circular Filter for 0..360 Heading with Deadband
-    private fun filterHeading(current: Float, target: Float, deadband: Float): Float {
+    // Continuous adaptive circular filter for 0..360 Heading: eliminates stickiness when centering on North
+    private fun filterHeading(current: Float, target: Float): Float {
         val delta = ((target - current + 540f) % 360f) - 180f
         val absDelta = abs(delta)
-        if (absDelta < deadband) return current
+        if (absDelta < 0.02f) return current
         val alpha = when {
-            absDelta >= 15f -> 0.78f
+            absDelta >= 15f -> 0.75f
             absDelta <= 1.5f -> 0.16f + (absDelta / 1.5f) * 0.16f
-            else -> 0.32f + ((absDelta - 1.5f) / 13.5f) * 0.46f
+            else -> 0.32f + ((absDelta - 1.5f) / 13.5f) * 0.43f
         }
         var smoothed = current + alpha * delta
         if (smoothed < 0f) smoothed += 360f
@@ -131,6 +146,12 @@ class CompassSensorManager(context: Context) : SensorEventListener {
     }
 
     fun startListening() {
+        hasGravity = false
+        hasGeomagnetic = false
+        isHeadingInitialized = false
+        isPitchInitialized = false
+        isRollInitialized = false
+
         if (rotationVectorSensor != null) {
             sensorManager.registerListener(this, rotationVectorSensor, SensorManager.SENSOR_DELAY_GAME)
         } else {
@@ -141,6 +162,11 @@ class CompassSensorManager(context: Context) : SensorEventListener {
 
     fun stopListening() {
         sensorManager.unregisterListener(this)
+        hasGravity = false
+        hasGeomagnetic = false
+        isHeadingInitialized = false
+        isPitchInitialized = false
+        isRollInitialized = false
     }
 
     fun tare() {
@@ -220,25 +246,41 @@ class CompassSensorManager(context: Context) : SensorEventListener {
     }
 
     override fun onSensorChanged(event: SensorEvent) {
-        if (event.sensor.type == Sensor.TYPE_ROTATION_VECTOR) {
-            SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
-            processRotationMatrix(rotationMatrix)
-        } else if (event.sensor.type == Sensor.TYPE_ACCELEROMETER) {
-            System.arraycopy(event.values, 0, gravityValues, 0, 3)
-            hasGravity = true
-            if (hasGeomagnetic) {
-                if (SensorManager.getRotationMatrix(rotationMatrix, null, gravityValues, geomagneticValues)) {
-                    processRotationMatrix(rotationMatrix)
-                }
-            } else {
-                processAccelerometerFallback(event.values)
+        when (event.sensor.type) {
+            Sensor.TYPE_ROTATION_VECTOR, Sensor.TYPE_GEOMAGNETIC_ROTATION_VECTOR -> {
+                SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
+                processRotationMatrix(rotationMatrix)
             }
-        } else if (event.sensor.type == Sensor.TYPE_MAGNETIC_FIELD) {
-            System.arraycopy(event.values, 0, geomagneticValues, 0, 3)
-            hasGeomagnetic = true
-            if (hasGravity) {
-                if (SensorManager.getRotationMatrix(rotationMatrix, null, gravityValues, geomagneticValues)) {
-                    processRotationMatrix(rotationMatrix)
+            Sensor.TYPE_ACCELEROMETER -> {
+                if (!hasGravity) {
+                    System.arraycopy(event.values, 0, filteredGravity, 0, 3)
+                    hasGravity = true
+                } else {
+                    filteredGravity[0] = ALPHA_GRAVITY * filteredGravity[0] + (1f - ALPHA_GRAVITY) * event.values[0]
+                    filteredGravity[1] = ALPHA_GRAVITY * filteredGravity[1] + (1f - ALPHA_GRAVITY) * event.values[1]
+                    filteredGravity[2] = ALPHA_GRAVITY * filteredGravity[2] + (1f - ALPHA_GRAVITY) * event.values[2]
+                }
+                if (hasGeomagnetic) {
+                    if (SensorManager.getRotationMatrix(rotationMatrix, null, filteredGravity, filteredGeomagnetic)) {
+                        processRotationMatrix(rotationMatrix)
+                    }
+                } else {
+                    processAccelerometerFallback(filteredGravity)
+                }
+            }
+            Sensor.TYPE_MAGNETIC_FIELD -> {
+                if (!hasGeomagnetic) {
+                    System.arraycopy(event.values, 0, filteredGeomagnetic, 0, 3)
+                    hasGeomagnetic = true
+                } else {
+                    filteredGeomagnetic[0] = ALPHA_MAGNETIC * filteredGeomagnetic[0] + (1f - ALPHA_MAGNETIC) * event.values[0]
+                    filteredGeomagnetic[1] = ALPHA_MAGNETIC * filteredGeomagnetic[1] + (1f - ALPHA_MAGNETIC) * event.values[1]
+                    filteredGeomagnetic[2] = ALPHA_MAGNETIC * filteredGeomagnetic[2] + (1f - ALPHA_MAGNETIC) * event.values[2]
+                }
+                if (hasGravity) {
+                    if (SensorManager.getRotationMatrix(rotationMatrix, null, filteredGravity, filteredGeomagnetic)) {
+                        processRotationMatrix(rotationMatrix)
+                    }
                 }
             }
         }
@@ -249,18 +291,21 @@ class CompassSensorManager(context: Context) : SensorEventListener {
         // Column 0 (Right):  (r[0], r[3], r[6])
         // Column 1 (Top):    (r[1], r[4], r[7])
         // Column 2 (Screen): (r[2], r[5], r[8])
-        // Line of sight through camera (-Z): (-r[2], -r[5], -r[8])
 
         // 1. Tilt-Compensated Compass Heading:
-        // Top edge vector in world coordinates is (r[1], r[4], r[7]).
-        // Projected onto the horizontal ground plane (East-North), its azimuth is atan2(r[1], r[4]).
-        // If the phone is held nearly vertical (past ~60°), switch to line-of-sight (-Z camera vector: -r[2], -r[5]).
-        val isUpright = abs(r[7]) > 0.85f
-        val forwardE = if (isUpright) -r[2] else r[1]
-        val forwardN = if (isUpright) -r[5] else r[4]
-
-        var targetHeading = Math.toDegrees(atan2(forwardE.toDouble(), forwardN.toDouble())).toFloat()
-        if (targetHeading < 0f) targetHeading += 360f
+        // The top edge of the device (12 o'clock / lubber chevron) in world coordinates is Column 1: (r[1], r[4], r[7]).
+        // Its horizontal ground projection is (r[1], r[4]), where r[1] is East and r[4] is North.
+        // atan2(r[1], r[4]) yields the continuous, tilt-compensated azimuth from North (0°) clockwise to East (90°).
+        // This is continuous across ALL tilt angles and eliminates discontinuous coordinate flips.
+        val horizontalNormSq = r[1] * r[1] + r[4] * r[4]
+        var targetHeading = if (horizontalNormSq > 0.005f) {
+            var h = Math.toDegrees(atan2(r[1].toDouble(), r[4].toDouble())).toFloat()
+            if (h < 0f) h += 360f
+            h
+        } else {
+            // Near zenith (straight up at sky), hold last stable heading
+            if (isHeadingInitialized) _headingFlow.value else 0f
+        }
 
         if (isTrueNorth) {
             targetHeading = (targetHeading + declination + 360f) % 360f
@@ -286,12 +331,29 @@ class CompassSensorManager(context: Context) : SensorEventListener {
         // Camera Roll: tilt in portrait plane (0° in vertical portrait)
         val targetCameraRoll = Math.toDegrees(atan2(-r[6].toDouble(), r[7].toDouble())).toFloat()
 
-        // Smooth all outputs with adaptive low-jitter filter & deadband
-        val smoothedHeading = filterHeading(_headingFlow.value, targetHeading, deadband = 0.12f)
-        val smoothedPitch = filterAngle(_pitchFlow.value, compensatedPitch, deadband = 0.06f)
-        val smoothedRoll = filterAngle(_rollFlow.value, compensatedRoll, deadband = 0.06f)
-        val smoothedElevation = filterAngle(_elevationFlow.value, targetElevation, deadband = 0.06f)
-        val smoothedCameraRoll = filterAngle(_cameraRollFlow.value, targetCameraRoll, deadband = 0.06f)
+        // Immediate crisp initialization on first sample
+        if (!isHeadingInitialized) {
+            _headingFlow.value = targetHeading
+            lastEmittedHeading = targetHeading
+            isHeadingInitialized = true
+        }
+        if (!isPitchInitialized) {
+            _pitchFlow.value = compensatedPitch
+            lastEmittedPitch = compensatedPitch
+            isPitchInitialized = true
+        }
+        if (!isRollInitialized) {
+            _rollFlow.value = compensatedRoll
+            lastEmittedRoll = compensatedRoll
+            isRollInitialized = true
+        }
+
+        // Smooth all outputs with continuous adaptive filter
+        val smoothedHeading = filterHeading(_headingFlow.value, targetHeading)
+        val smoothedPitch = filterAngle(_pitchFlow.value, compensatedPitch)
+        val smoothedRoll = filterAngle(_rollFlow.value, compensatedRoll)
+        val smoothedElevation = filterAngle(_elevationFlow.value, targetElevation)
+        val smoothedCameraRoll = filterAngle(_cameraRollFlow.value, targetCameraRoll)
 
         _headingFlow.value = smoothedHeading
         _pitchFlow.value = smoothedPitch
@@ -307,15 +369,15 @@ class CompassSensorManager(context: Context) : SensorEventListener {
 
         val isLevel = abs(displayPitch) <= 0.6f && abs(displayRoll) <= 0.6f
 
-        // Check if values changed noticeably to prevent unnecessary Compose recompositions
+        // Recomposition throttling to eliminate unnecessary Compose redraws
         val headingDelta = abs(((smoothedHeading - lastEmittedHeading + 540f) % 360f) - 180f)
         val pitchDelta = abs(smoothedPitch - lastEmittedPitch)
         val rollDelta = abs(smoothedRoll - lastEmittedRoll)
         val elevationDelta = abs(smoothedElevation - lastEmittedElevation)
         val cameraRollDelta = abs(smoothedCameraRoll - lastEmittedCameraRoll)
 
-        if (headingDelta >= 0.06f || pitchDelta >= 0.05f || rollDelta >= 0.05f ||
-            elevationDelta >= 0.05f || cameraRollDelta >= 0.05f || isLevel != lastEmittedIsLevel ||
+        if (headingDelta >= 0.05f || pitchDelta >= 0.04f || rollDelta >= 0.04f ||
+            elevationDelta >= 0.04f || cameraRollDelta >= 0.04f || isLevel != lastEmittedIsLevel ||
             isBearingLocked != _compassState.value.isBearingLocked || isAngleLocked != _compassState.value.isAngleLocked
         ) {
             lastEmittedHeading = smoothedHeading
@@ -363,10 +425,21 @@ class CompassSensorManager(context: Context) : SensorEventListener {
         val compensatedPitch = targetPitch - tarePitch
         val compensatedRoll = targetRoll - tareRoll
 
-        val smoothedPitch = filterAngle(_pitchFlow.value, compensatedPitch, deadband = 0.06f)
-        val smoothedRoll = filterAngle(_rollFlow.value, compensatedRoll, deadband = 0.06f)
-        val smoothedElevation = filterAngle(_elevationFlow.value, targetElevation, deadband = 0.06f)
-        val smoothedCameraRoll = filterAngle(_cameraRollFlow.value, targetCameraRoll, deadband = 0.06f)
+        if (!isPitchInitialized) {
+            _pitchFlow.value = compensatedPitch
+            lastEmittedPitch = compensatedPitch
+            isPitchInitialized = true
+        }
+        if (!isRollInitialized) {
+            _rollFlow.value = compensatedRoll
+            lastEmittedRoll = compensatedRoll
+            isRollInitialized = true
+        }
+
+        val smoothedPitch = filterAngle(_pitchFlow.value, compensatedPitch)
+        val smoothedRoll = filterAngle(_rollFlow.value, compensatedRoll)
+        val smoothedElevation = filterAngle(_elevationFlow.value, targetElevation)
+        val smoothedCameraRoll = filterAngle(_cameraRollFlow.value, targetCameraRoll)
 
         _pitchFlow.value = smoothedPitch
         _rollFlow.value = smoothedRoll
@@ -380,13 +453,29 @@ class CompassSensorManager(context: Context) : SensorEventListener {
 
         val isLevel = abs(displayPitch) <= 0.6f && abs(displayRoll) <= 0.6f
 
-        _compassState.value = _compassState.value.copy(
-            pitch = displayPitch,
-            roll = displayRoll,
-            elevation = displayElevation,
-            cameraRoll = displayCameraRoll,
-            isLevel = isLevel
-        )
+        val pitchDelta = abs(smoothedPitch - lastEmittedPitch)
+        val rollDelta = abs(smoothedRoll - lastEmittedRoll)
+        val elevationDelta = abs(smoothedElevation - lastEmittedElevation)
+        val cameraRollDelta = abs(smoothedCameraRoll - lastEmittedCameraRoll)
+
+        if (pitchDelta >= 0.04f || rollDelta >= 0.04f || elevationDelta >= 0.04f ||
+            cameraRollDelta >= 0.04f || isLevel != lastEmittedIsLevel ||
+            isBearingLocked != _compassState.value.isBearingLocked || isAngleLocked != _compassState.value.isAngleLocked
+        ) {
+            lastEmittedPitch = smoothedPitch
+            lastEmittedRoll = smoothedRoll
+            lastEmittedElevation = smoothedElevation
+            lastEmittedCameraRoll = smoothedCameraRoll
+            lastEmittedIsLevel = isLevel
+
+            _compassState.value = _compassState.value.copy(
+                pitch = displayPitch,
+                roll = displayRoll,
+                elevation = displayElevation,
+                cameraRoll = displayCameraRoll,
+                isLevel = isLevel
+            )
+        }
     }
 
     override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {
