@@ -92,6 +92,7 @@ class MainActivity : ComponentActivity() {
                 val locationState by locationManager.locationState.collectAsState()
                 val isFlashlightOn by flashlightManager.isTorchOn.collectAsState()
 
+                var isOpeningSplashActive by remember { mutableStateOf(true) }
                 var isIntroActive by remember { mutableStateOf(true) }
                 var showExitDialog by remember { mutableStateOf(false) }
 
@@ -144,11 +145,11 @@ class MainActivity : ComponentActivity() {
                 }
 
                 // Dynamic Sensor Listening Lifecycle:
-                // Stop high-frequency sensor updates while on the Intro screen to eliminate CPU churn and micro-stutter.
+                // Stop high-frequency sensor updates while on the Splash or Intro screen to eliminate CPU churn and micro-stutter.
                 // Resume immediately when entering the instrument dashboard.
-                LaunchedEffect(isIntroActive) {
-                    isIntroScreenActive = isIntroActive
-                    if (isIntroActive) {
+                LaunchedEffect(isIntroActive, isOpeningSplashActive) {
+                    isIntroScreenActive = isIntroActive || isOpeningSplashActive
+                    if (isIntroActive || isOpeningSplashActive) {
                         sensorManager.stopListening()
                     } else {
                         sensorManager.startListening()
@@ -156,59 +157,79 @@ class MainActivity : ComponentActivity() {
                 }
 
                 // Safe Rotary Ratchet Click & Haptic Feedback for Compass Mode (Decoupled)
-                LaunchedEffect(sensorState.heading, currentMode, isIntroActive, isSoundEnabled, isHapticsEnabled) {
-                    if (currentMode == "Compass" && !isIntroActive && (isSoundEnabled || isHapticsEnabled)) {
+                LaunchedEffect(sensorState.heading, currentMode, isIntroActive, isOpeningSplashActive, isSoundEnabled, isHapticsEnabled) {
+                    if (currentMode == "Compass" && !isIntroActive && !isOpeningSplashActive && (isSoundEnabled || isHapticsEnabled)) {
                         soundManager.onHeadingChanged(sensorState.heading)
                     }
                 }
 
                 val notesList by notesManager.notes.collectAsState()
 
-                // Intercept hardware and gesture back navigation to display exit prompt with 5-star rating
+                // Intercept hardware and gesture back navigation:
                 BackHandler(enabled = true) {
                     if (showNotesModal || showSkinsModal || showSettingsModal || showCalibrationModal) {
                         showNotesModal = false
                         showSkinsModal = false
                         showSettingsModal = false
                         showCalibrationModal = false
+                    } else if (isOpeningSplashActive) {
+                        // Skip splash animation directly to intro screen
+                        isOpeningSplashActive = false
                     } else if (!isIntroActive) {
-                        // User trying to exit from measurement dashboard
-                        showExitDialog = true
+                        // User pressing back from measurement dashboard returns to the Introductory screen
+                        isIntroActive = true
                     } else {
-                        // User trying to exit from introductory screen
+                        // User pressing back from introductory screen triggers exit prompt with 5-star rating
                         showExitDialog = true
                     }
                 }
 
+                val screenState = when {
+                    isOpeningSplashActive -> "SPLASH"
+                    isIntroActive -> "INTRO"
+                    else -> "DASHBOARD"
+                }
+
                 AnimatedContent(
-                    targetState = isIntroActive,
+                    targetState = screenState,
                     transitionSpec = {
-                        fadeIn(animationSpec = tween(180, easing = FastOutSlowInEasing)) togetherWith
-                                fadeOut(animationSpec = tween(180, easing = FastOutSlowInEasing))
+                        fadeIn(animationSpec = tween(220, easing = FastOutSlowInEasing)) togetherWith
+                                fadeOut(animationSpec = tween(220, easing = FastOutSlowInEasing))
                     },
-                    label = "IntroToDashboardTransition"
-                ) { introActive ->
-                    if (introActive) {
-                        // ── SCREEN: INTRODUCTORY / START SCREEN WITH AD MONETIZATION SLOT ──
-                        ScreenIntroView(
-                            hasMagnetometer = sensorManager.hasMagnetometer,
-                            hasLocationPermission = hasLocationPermission,
-                            skin = activePalette,
-                            isDarkMode = isDarkMode,
-                            onThemeToggle = { isDarkMode = !isDarkMode },
-                            onSkinsClick = { showSkinsModal = true },
-                            onRateClick = { showExitDialog = true },
-                            onStartTool = { selectedMode ->
-                                currentMode = selectedMode
-                                isIntroActive = false
-                                if (selectedMode == "Location" && locationManager.hasLocationPermission()) {
-                                    locationManager.startLocationUpdates()
+                    label = "AppScreenTransition"
+                ) { screen ->
+                    when (screen) {
+                        "SPLASH" -> {
+                            // ── SCREEN: CINEMATIC ANIMATED LAUNCH SCREEN ────────────────────
+                            ScreenOpeningAnimatedView(
+                                skin = activePalette,
+                                onAnimationComplete = {
+                                    isOpeningSplashActive = false
                                 }
-                            }
-                        )
-                    } else {
-                        // ── SCREEN: MAIN INSTRUMENT DASHBOARD ──────────────────────────────
-                        Scaffold(
+                            )
+                        }
+                        "INTRO" -> {
+                            // ── SCREEN: INTRODUCTORY / START SCREEN WITH AD MONETIZATION SLOT ──
+                            ScreenIntroView(
+                                hasMagnetometer = sensorManager.hasMagnetometer,
+                                hasLocationPermission = hasLocationPermission,
+                                skin = activePalette,
+                                isDarkMode = isDarkMode,
+                                onThemeToggle = { isDarkMode = !isDarkMode },
+                                onSkinsClick = { showSkinsModal = true },
+                                onRateClick = { showExitDialog = true },
+                                onStartTool = { selectedMode ->
+                                    currentMode = selectedMode
+                                    isIntroActive = false
+                                    if (selectedMode == "Location" && locationManager.hasLocationPermission()) {
+                                        locationManager.startLocationUpdates()
+                                    }
+                                }
+                            )
+                        }
+                        else -> {
+                            // ── SCREEN: MAIN INSTRUMENT DASHBOARD ──────────────────────────────
+                            Scaffold(
                             topBar = {
                                 GoogleTopAppBar(
                                     title = currentMode.uppercase(),
@@ -354,6 +375,7 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
+            }
 
                 // Modals & Bottom Sheets
                 if (showNotesModal) {
