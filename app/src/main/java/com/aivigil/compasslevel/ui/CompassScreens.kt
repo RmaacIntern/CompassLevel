@@ -140,7 +140,8 @@ fun ScreenLiveCompassView(
     onBearingLockToggle: () -> Unit = {},
     onSaveNoteClick: (heading: Float, cardinal: String) -> Unit = { _, _ -> },
     skin: SkinPalette,
-    locationData: LocationData = LocationData()
+    locationData: LocationData = LocationData(),
+    hasMagnetometer: Boolean = true
 ) {
     val cardinal = when (heading) {
         in 22.5f..67.5f   -> "NE"
@@ -245,6 +246,37 @@ fun ScreenLiveCompassView(
                 }
             }
 
+            // Magnetometer Missing Hardware Warning Banner
+            if (!hasMagnetometer) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(AmberWarning.copy(alpha = 0.15f))
+                        .border(1.dp, AmberWarning.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Info,
+                            contentDescription = null,
+                            tint = AmberWarning,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Text(
+                            text = "NO COMPASS SENSOR (GPS BEARING MODE)",
+                            color = AmberWarning,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily.Default
+                        )
+                    }
+                }
+            }
+
             // Live Coordinates readout right on Compass Screen
             val hasCoords = locationData.hasFix || locationData.latitude != 0.0 || locationData.longitude != 0.0
             if (hasCoords) {
@@ -311,7 +343,8 @@ fun ScreenLiveCompassView(
     onBearingLockToggle: () -> Unit = {},
     onSaveNoteClick: (heading: Float, cardinal: String) -> Unit = { _, _ -> },
     skin: AppSkin = AppSkin.CLASSIC_EMERALD,
-    locationData: LocationData = LocationData()
+    locationData: LocationData = LocationData(),
+    hasMagnetometer: Boolean = true
 ) {
     ScreenLiveCompassView(
         heading = heading,
@@ -323,7 +356,8 @@ fun ScreenLiveCompassView(
         onBearingLockToggle = onBearingLockToggle,
         onSaveNoteClick = onSaveNoteClick,
         skin = skin.palette(true),
-        locationData = locationData
+        locationData = locationData,
+        hasMagnetometer = hasMagnetometer
     )
 }
 

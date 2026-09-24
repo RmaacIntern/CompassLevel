@@ -97,6 +97,12 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
+                LaunchedEffect(locationState.bearing, locationState.hasFix) {
+                    if (!sensorManager.hasMagnetometer && locationState.bearing > 0f) {
+                        sensorManager.setGpsBearing(locationState.bearing)
+                    }
+                }
+
                 val notesList by notesManager.notes.collectAsState()
 
                 // Intercept hardware and gesture back navigation to display exit prompt with 5-star rating
@@ -253,48 +259,26 @@ class MainActivity : ComponentActivity() {
                                             )
                                         }
                                         else -> {
-                                            if (!sensorManager.hasMagnetometer) {
-                                                ScreenContentView(
-                                                    pitch = if (sensorState.isAngleLocked) sensorState.lockedPitch else sensorState.pitch,
-                                                    roll = if (sensorState.isAngleLocked) sensorState.lockedRoll else sensorState.roll,
-                                                    isLevel = sensorState.isLevel,
-                                                    isAngleLocked = sensorState.isAngleLocked,
-                                                    usePercentGrade = sensorState.usePercentGrade,
-                                                    onTareClick = { sensorManager.tare() },
-                                                    onAngleLockToggle = { sensorManager.toggleAngleLock() },
-                                                    onFlashlightToggle = { flashlightManager.toggleFlashlight() },
-                                                    isFlashlightOn = isFlashlightOn,
-                                                    onSaveNoteClick = { p, r ->
-                                                        notesManager.saveNote(
-                                                            type = "Level",
-                                                            title = "Dual-Axis Level Alignment",
-                                                            primaryValue = "X: ${String.format(Locale.US, "%.1f", r)}°, Y: ${String.format(Locale.US, "%.1f", p)}°",
-                                                            secondaryDetails = if (sensorState.isLevel) "PERFECT LEVEL" else "Inclination Detected"
-                                                        )
-                                                    },
-                                                    skin = activePalette
-                                                )
-                                            } else {
-                                                ScreenLiveCompassView(
-                                                    heading = if (sensorState.isBearingLocked) sensorState.lockedHeading else sensorState.heading,
-                                                    pitch = sensorState.pitch,
-                                                    roll = sensorState.roll,
-                                                    isLevel = sensorState.isLevel,
-                                                    isBearingLocked = sensorState.isBearingLocked,
-                                                    lockedHeading = sensorState.lockedHeading,
-                                                    onBearingLockToggle = { sensorManager.toggleBearingLock() },
-                                                    onSaveNoteClick = { h, card ->
-                                                        notesManager.saveNote(
-                                                            type = "Compass",
-                                                            title = "Compass Bearing $card",
-                                                            primaryValue = "${h.toInt()}° $card",
-                                                            secondaryDetails = "Pitch: ${sensorState.pitch.toInt()}°, Roll: ${sensorState.roll.toInt()}°"
-                                                        )
-                                                    },
-                                                    skin = activePalette,
-                                                    locationData = locationState
-                                                )
-                                            }
+                                            ScreenLiveCompassView(
+                                                heading = if (sensorState.isBearingLocked) sensorState.lockedHeading else sensorState.heading,
+                                                pitch = sensorState.pitch,
+                                                roll = sensorState.roll,
+                                                isLevel = sensorState.isLevel,
+                                                isBearingLocked = sensorState.isBearingLocked,
+                                                lockedHeading = sensorState.lockedHeading,
+                                                onBearingLockToggle = { sensorManager.toggleBearingLock() },
+                                                onSaveNoteClick = { h, card ->
+                                                    notesManager.saveNote(
+                                                        type = "Compass",
+                                                        title = "Compass Bearing $card",
+                                                        primaryValue = "${h.toInt()}° $card",
+                                                        secondaryDetails = "Pitch: ${sensorState.pitch.toInt()}°, Roll: ${sensorState.roll.toInt()}°"
+                                                    )
+                                                },
+                                                skin = activePalette,
+                                                locationData = locationState,
+                                                hasMagnetometer = sensorManager.hasMagnetometer
+                                            )
                                         }
                                     }
                                 }

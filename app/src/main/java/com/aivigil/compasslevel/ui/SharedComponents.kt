@@ -88,34 +88,21 @@ fun GoogleTopAppBar(
                     letterSpacing = 0.5.sp,
                     maxLines = 1
                 )
-                // Calm hardware diagnostic pill (Nothing style dot matrix badge)
+                // Calm hardware diagnostic status indicator (Leica / Nothing style active LED)
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(skin.cardBackground)
-                        .border(1.dp, skin.cardBorder, RoundedCornerShape(12.dp))
+                        .clip(CircleShape)
+                        .background(skin.primaryAccent.copy(alpha = 0.18f))
                         .clickable { onCalibrateClick() }
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                        .padding(5.dp),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(5.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .clip(CircleShape)
-                                .background(skin.primaryAccent)
-                        )
-                        Text(
-                            text = "ACTIVE",
-                            color = skin.textPrimary,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Default,
-                            letterSpacing = 0.5.sp
-                        )
-                    }
+                    Box(
+                        modifier = Modifier
+                            .size(7.dp)
+                            .clip(CircleShape)
+                            .background(skin.primaryAccent)
+                    )
                 }
             }
         },

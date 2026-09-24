@@ -195,6 +195,17 @@ class CompassSensorManager(context: Context) : SensorEventListener {
         _compassState.value = _compassState.value.copy(usePercentGrade = enabled)
     }
 
+    fun setGpsBearing(gpsBearing: Float) {
+        if (!hasMagnetometer) {
+            _headingFlow.value = gpsBearing
+            _compassState.value = _compassState.value.copy(
+                heading = gpsBearing,
+                isReliable = true,
+                accuracyLevel = "GPS Bearing"
+            )
+        }
+    }
+
     override fun onSensorChanged(event: SensorEvent) {
         if (event.sensor.type == Sensor.TYPE_ROTATION_VECTOR) {
             SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
