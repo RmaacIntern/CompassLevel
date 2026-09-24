@@ -6,8 +6,10 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -34,8 +36,10 @@ class MainActivity : ComponentActivity() {
     private lateinit var locationManager: CompassLocationManager
     private lateinit var notesManager: MeasurementNotesManager
     private lateinit var flashlightManager: FlashlightManager
+    private var isIntroScreenActive: Boolean = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         sensorManager = CompassSensorManager(this)
         locationManager = CompassLocationManager(this)
@@ -103,6 +107,18 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
+                // Dynamic Sensor Listening Lifecycle:
+                // Stop high-frequency sensor updates while on the Intro screen to eliminate CPU churn and micro-stutter.
+                // Resume immediately when entering the instrument dashboard.
+                LaunchedEffect(isIntroActive) {
+                    isIntroScreenActive = isIntroActive
+                    if (isIntroActive) {
+                        sensorManager.stopListening()
+                    } else {
+                        sensorManager.startListening()
+                    }
+                }
+
                 val notesList by notesManager.notes.collectAsState()
 
                 // Intercept hardware and gesture back navigation to display exit prompt with 5-star rating
@@ -124,7 +140,8 @@ class MainActivity : ComponentActivity() {
                 AnimatedContent(
                     targetState = isIntroActive,
                     transitionSpec = {
-                        fadeIn(animationSpec = tween(260)) togetherWith fadeOut(animationSpec = tween(260))
+                        fadeIn(animationSpec = tween(180, easing = FastOutSlowInEasing)) togetherWith
+                                fadeOut(animationSpec = tween(180, easing = FastOutSlowInEasing))
                     },
                     label = "IntroToDashboardTransition"
                 ) { introActive ->
@@ -172,6 +189,7 @@ class MainActivity : ComponentActivity() {
                                     }
                                 )
                             },
+                            contentWindowInsets = WindowInsets(0, 0, 0, 0),
                             containerColor = activePalette.appBackground
                         ) { innerPadding ->
                             Box(
@@ -182,7 +200,8 @@ class MainActivity : ComponentActivity() {
                                 AnimatedContent(
                                     targetState = currentMode,
                                     transitionSpec = {
-                                        fadeIn(animationSpec = tween(220)) togetherWith fadeOut(animationSpec = tween(220))
+                                        fadeIn(animationSpec = tween(180, easing = FastOutSlowInEasing)) togetherWith
+                                                fadeOut(animationSpec = tween(180, easing = FastOutSlowInEasing))
                                     },
                                     label = "ScreenTransition"
                                 ) { mode ->
@@ -378,7 +397,9 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        sensorManager.startListening()
+        if (!isIntroScreenActive) {
+            sensorManager.startListening()
+        }
         if (::locationManager.isInitialized && locationManager.hasLocationPermission()) {
             locationManager.startLocationUpdates()
         }

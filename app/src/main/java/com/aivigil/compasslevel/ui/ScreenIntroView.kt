@@ -24,11 +24,13 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aivigil.compasslevel.ui.theme.*
@@ -49,7 +51,7 @@ fun ScreenIntroView(
     val haptic = LocalHapticFeedback.current
     val scrollState = rememberScrollState()
 
-    // Smooth subtle ambient rotation for the compass logo
+    // Smooth subtle ambient pulse for the compass logo
     val infiniteTransition = rememberInfiniteTransition(label = "intro_rotation")
     val pulseGlow by infiniteTransition.animateFloat(
         initialValue = 0.25f,
@@ -77,20 +79,26 @@ fun ScreenIntroView(
                 .size(130.dp),
             contentAlignment = Alignment.Center
         ) {
-            // Ambient Radial Glow
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val cx = size.width / 2f
-                val cy = size.height / 2f
+            // Ambient Radial Glow - Rendered on GPU layer to eliminate GC churn and frame drops
+            val glowBrush = remember(skin.primaryAccent) {
+                Brush.radialGradient(
+                    colors = listOf(
+                        skin.primaryAccent.copy(alpha = 0.45f),
+                        Color.Transparent
+                    )
+                )
+            }
+            Canvas(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        alpha = pulseGlow
+                    }
+            ) {
                 drawCircle(
-                    brush = Brush.radialGradient(
-                        colors = listOf(
-                            skin.primaryAccent.copy(alpha = pulseGlow * 0.4f),
-                            Color.Transparent
-                        ),
-                        radius = size.width / 2f
-                    ),
+                    brush = glowBrush,
                     radius = size.width / 2f,
-                    center = Offset(cx, cy)
+                    center = center
                 )
             }
 
@@ -200,19 +208,22 @@ fun ScreenIntroView(
             Text(
                 text = "COMPASS & CLINOMETER",
                 color = skin.textPrimary,
-                fontSize = 23.sp,
+                fontSize = 19.sp,
                 fontWeight = FontWeight.ExtraBold,
                 fontFamily = FontFamily.Default,
-                letterSpacing = 1.2.sp,
-                textAlign = TextAlign.Center
+                letterSpacing = 0.5.sp,
+                textAlign = TextAlign.Center,
+                maxLines = 1
             )
             Text(
                 text = "Professional Precision Level & Navigation Suite",
                 color = skin.textSecondary,
-                fontSize = 13.sp,
+                fontSize = 12.sp,
                 fontWeight = FontWeight.Normal,
                 fontFamily = FontFamily.Default,
-                textAlign = TextAlign.Center
+                textAlign = TextAlign.Center,
+                lineHeight = 16.sp,
+                maxLines = 2
             )
 
             // Hardware Status Pill
@@ -243,7 +254,9 @@ fun ScreenIntroView(
                             color = skin.textPrimary,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Default
+                            fontFamily = FontFamily.Default,
+                            maxLines = 1,
+                            softWrap = false
                         )
                     }
                 }
@@ -333,18 +346,25 @@ fun ScreenIntroView(
                             )
                         }
 
-                        Column(modifier = Modifier.weight(1f)) {
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
                             Text(
                                 text = "Ultra Precision Pro Suite",
                                 color = skin.textPrimary,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                             Text(
                                 text = "Calibrated digital tools for field engineers and architects.",
                                 color = skin.textSecondary,
-                                fontSize = 12.sp,
-                                lineHeight = 16.sp
+                                fontSize = 11.5.sp,
+                                lineHeight = 15.sp,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
 
@@ -513,35 +533,57 @@ private fun IntroToolCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .height(102.dp)
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(skin.primaryAccent.copy(alpha = 0.15f)),
-                contentAlignment = Alignment.Center
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(skin.primaryAccent.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = skin.primaryAccent,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+
                 Icon(
-                    imageVector = icon,
+                    imageVector = Icons.Default.ArrowForward,
                     contentDescription = null,
-                    tint = skin.primaryAccent,
-                    modifier = Modifier.size(20.dp)
+                    tint = skin.textSecondary.copy(alpha = 0.4f),
+                    modifier = Modifier.size(14.dp)
                 )
             }
 
-            Column {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(1.dp)
+            ) {
                 Text(
                     text = title,
                     color = skin.textPrimary,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     text = subtitle,
                     color = skin.textSecondary,
-                    fontSize = 11.sp
+                    fontSize = 10.5.sp,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }

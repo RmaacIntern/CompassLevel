@@ -32,6 +32,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aivigil.compasslevel.ui.theme.*
@@ -247,7 +248,7 @@ fun GoogleNavigationBar(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .windowInsetsPadding(WindowInsets.navigationBars)
+                .navigationBarsPadding()
         ) {
             // Fine hairline divider
             Box(
@@ -260,8 +261,8 @@ fun GoogleNavigationBar(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(60.dp)
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                    .height(58.dp)
+                    .padding(horizontal = 4.dp, vertical = 2.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceAround
             ) {
@@ -282,20 +283,19 @@ fun GoogleNavigationBar(
                                     onModeSelected(mode)
                                 }
                             }
-                            .padding(vertical = 6.dp),
+                            .padding(vertical = 4.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
+                            verticalArrangement = Arrangement.spacedBy(2.dp)
                         ) {
                             Icon(
                                 imageVector = if (isSelected) activeIcon else inactiveIcon,
                                 contentDescription = mode,
                                 tint = if (isSelected) skin.primaryAccent else skin.textSecondary.copy(alpha = 0.7f),
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(22.dp)
                             )
-                            Spacer(modifier = Modifier.height(3.dp))
                             Text(
                                 text = mode,
                                 color = if (isSelected) skin.primaryAccent else skin.textSecondary.copy(alpha = 0.7f),
@@ -303,7 +303,9 @@ fun GoogleNavigationBar(
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                 fontFamily = FontFamily.Default,
                                 letterSpacing = 0.2.sp,
-                                maxLines = 1
+                                maxLines = 1,
+                                softWrap = false,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
