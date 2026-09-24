@@ -12,13 +12,15 @@ type: session log
 
 | Area | State |
 |---|---|
-| Introductory Launch Screen | Deployed (`ScreenIntroView.kt`); displays Porsche/Leica brand dial, sensor readiness diagnostics, 4 tool cards, and primary start action |
+| Introductory Launch Screen | Deployed (`ScreenIntroView.kt`); GPU-accelerated pulse glow, responsive typography, 4 uniform 102dp tool cards, and start action |
 | Monetization Architecture | Dedicated high-visibility sponsored ad container (`adSlot`) ready for Google AdMob Native/Banner insertion before main tools |
 | Exit App Prompt | Interactive 5-star rating dialog (`ExitAppDialog.kt`) intercepted via `BackHandler`; triggers Google Play review intent on 4-5 stars and feedback email on 1-3 stars |
-| Device Compatibility | Bullseye and Y-tube converted to dynamic `BoxWithConstraints` scaling; system bar insets (`statusBarsPadding()`, `navigationBarsPadding()`) guard against notch clipping |
+| Bottom Navigation Bar Insets | Fixed via `enableEdgeToEdge()` and `navigationBarsPadding()`; text labels and icons render 100% above 3-button & gesture bars |
+| Performance & Lag Optimization | Scoped sensor listening lifecycle (`isIntroActive` stops 50Hz sensor churn); GPU `graphicsLayer` removes frame drops and heap allocations |
+| Device Compatibility | Verified on physical Samsung Galaxy A06 (`SM-A065F`); non-magnetometer devices support live GPS bearing mode |
 | Navigation Flow | Bidirectional flow: Intro Screen ➔ Tool Dashboard, with Home navigation button on `GoogleTopAppBar` to return anytime |
-| APK Packaging | `CompassLevel-v1.0-debug.apk` (22.1 MB) generated and placed on Desktop (`C:\Users\RIZWANPC\Desktop\CompassLevel-v1.0.apk`) |
-| Git Remotes | Synchronized to `personal/main` and `origin/main` |
+| APK Packaging | `CompassLevel-v1.0.apk` (21.8 MB) compiled, installed on device, and placed on Desktop (`C:\Users\RIZWANPC\Desktop\CompassLevel-v1.0.apk`) |
+| Git Remotes | Synchronized to `personal/main` and `origin/main` (commit `7e1f201`) |
 
 ---
 
@@ -84,9 +86,25 @@ type: session log
 
 ---
 
-### 4. Build Packaging & Synchronization
-- Gradle build output named: `CompassLevel-v1.0-debug.apk` (22.1 MB).
+### 5. UI Polish, Zero-Lag Architecture & Inset Overhaul
+- **System Navigation Inset Fix (`enableEdgeToEdge()`)**:
+  - Resolved root cause of bottom bar text labels (`Compass`, `Level`, `Clinometer`, `Location`) being partially occluded by Android/Samsung's 3-button navigation bar (`|||`, `O`, `<`).
+  - Enabled `enableEdgeToEdge()` in `MainActivity.onCreate()` and applied `Modifier.navigationBarsPadding()` within `GoogleNavigationBar`.
+  - Configured `Scaffold(contentWindowInsets = WindowInsets(0, 0, 0, 0))` so measurement dashboards and bottom navigation bars adapt seamlessly between gesture and 3-button modes without clipping.
+- **Zero-Lag GPU Acceleration (`graphicsLayer`)**:
+  - Replaced per-frame `Brush.radialGradient` reallocations in `ScreenIntroView`'s pulse glow with `Modifier.graphicsLayer { alpha = pulseGlow }` over a remembered brush. This pushes ambient opacity changes directly to the GPU compositor with zero heap allocation or garbage collection stutter.
+- **Sensor Listening Scoping**:
+  - Scoped high-frequency (50Hz) accelerometer/magnetometer sensor listeners to `!isIntroActive`. Completely zeroes out background sensor callbacks and recomposition overhead while on the Intro screen.
+- **Responsive Typography & Uniform Grid Heights**:
+  - Balanced typography (`fontSize = 19.sp` title, `12.sp` subtitle with `maxLines = 2`, `softWrap = false`, `TextOverflow.Ellipsis`).
+  - Standardized `IntroToolCard` height to `102.dp` with aligned forward indicator arrows, ensuring pixel-perfect symmetry across compact 320dp screens and large phablets.
+
+---
+
+### 6. Build Packaging & Synchronization
+- Gradle build output named: `CompassLevel-v1.0.apk` (21.8 MB).
 - Desktop deployment: `C:\Users\RIZWANPC\Desktop\CompassLevel-v1.0.apk`.
+- Live test verified on Samsung Galaxy A06 (`SM-A065F`).
 - All changes committed and synchronized across both remotes:
   - Personal: `https://github.com/riz5y/CompassLevel`
   - RMAAC: `https://github.com/RmaacIntern/CompassLevel`
