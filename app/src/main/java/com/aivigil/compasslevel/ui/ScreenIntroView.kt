@@ -45,6 +45,10 @@ fun ScreenIntroView(
     hasMagnetometer: Boolean = true,
     hasLocationPermission: Boolean = false,
     skin: SkinPalette,
+    isDarkMode: Boolean = false,
+    onThemeToggle: () -> Unit = {},
+    onSkinsClick: () -> Unit = {},
+    onRateClick: () -> Unit = {},
     onStartTool: (mode: String) -> Unit,
     adSlot: (@Composable () -> Unit)? = null
 ) {
@@ -67,11 +71,124 @@ fun ScreenIntroView(
             .statusBarsPadding()
             .navigationBarsPadding()
             .verticalScroll(scrollState)
-            .padding(horizontal = 20.dp, vertical = 16.dp),
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(20.dp)
+        verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
-        Spacer(modifier = Modifier.height(8.dp))
+        // ── 0. Top Header Navigation & Quick Preferences Bar ─────────────────
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 2.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(skin.primaryAccent.copy(alpha = 0.15f))
+                        .border(1.dp, skin.primaryAccent.copy(alpha = 0.4f), RoundedCornerShape(10.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Explore,
+                        contentDescription = null,
+                        tint = skin.primaryAccent,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Column {
+                    Text(
+                        text = "COMPASS PRO",
+                        color = skin.textPrimary,
+                        fontSize = 13.5.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        fontFamily = FontFamily.Default,
+                        letterSpacing = 0.5.sp
+                    )
+                    Text(
+                        text = "v1.0 • SUITE",
+                        color = skin.textSecondary,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Medium,
+                        fontFamily = FontFamily.Default
+                    )
+                }
+            }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Theme picker button (Spacious 38dp squircle)
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(11.dp))
+                        .background(skin.cardBackground)
+                        .border(1.dp, skin.cardBorder, RoundedCornerShape(11.dp))
+                        .clickable {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            onSkinsClick()
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Palette,
+                        contentDescription = "Theme Skins",
+                        tint = skin.primaryAccent,
+                        modifier = Modifier.size(19.dp)
+                    )
+                }
+
+                // Dark / Light Mode Toggle button (Spacious 38dp squircle)
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(11.dp))
+                        .background(skin.cardBackground)
+                        .border(1.dp, skin.cardBorder, RoundedCornerShape(11.dp))
+                        .clickable {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            onThemeToggle()
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = if (isDarkMode) Icons.Default.LightMode else Icons.Default.DarkMode,
+                        contentDescription = if (isDarkMode) "Switch to Light Mode" else "Switch to Dark Mode",
+                        tint = if (isDarkMode) Color(0xFFFFD700) else skin.textPrimary,
+                        modifier = Modifier.size(19.dp)
+                    )
+                }
+
+                // Rate button (Spacious 38dp squircle with gold border)
+                Box(
+                    modifier = Modifier
+                        .size(38.dp)
+                        .clip(RoundedCornerShape(11.dp))
+                        .background(skin.cardBackground)
+                        .border(1.dp, Color(0xFFFFD700).copy(alpha = 0.45f), RoundedCornerShape(11.dp))
+                        .clickable {
+                            haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                            onRateClick()
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = "Rate App",
+                        tint = Color(0xFFFFD700),
+                        modifier = Modifier.size(19.dp)
+                    )
+                }
+            }
+        }
 
         // ── 1. Branded Instrument Icon / Graphic ─────────────────────────────
         Box(
@@ -499,15 +616,91 @@ fun ScreenIntroView(
             }
         }
 
-        Text(
-            text = "Press BACK anytime to open the exit rating prompt",
-            color = skin.textSecondary.copy(alpha = 0.7f),
-            fontSize = 11.sp,
-            fontFamily = FontFamily.Default,
-            textAlign = TextAlign.Center
-        )
+        // ── 6. Dedicated Rating & Feedback Card (Accessible User-Facing) ──
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
+                .clickable {
+                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    onRateClick()
+                },
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = skin.cardBackground),
+            border = CardDefaults.outlinedCardBorder().copy(
+                brush = androidx.compose.ui.graphics.SolidColor(skin.cardBorder)
+            )
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(42.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFFFD700).copy(alpha = 0.18f))
+                            .border(1.dp, Color(0xFFFFD700).copy(alpha = 0.4f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = "Rate Experience",
+                            tint = Color(0xFFFFD700),
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
 
-        Spacer(modifier = Modifier.height(12.dp))
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(
+                            text = "Enjoying Compass Pro?",
+                            color = skin.textPrimary,
+                            fontSize = 13.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily.Default,
+                            maxLines = 1
+                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                        ) {
+                            repeat(5) {
+                                Icon(
+                                    imageVector = Icons.Default.Star,
+                                    contentDescription = null,
+                                    tint = Color(0xFFFFD700),
+                                    modifier = Modifier.size(13.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Tap to rate us",
+                                color = skin.textSecondary,
+                                fontSize = 11.sp,
+                                fontFamily = FontFamily.Default,
+                                maxLines = 1
+                            )
+                        }
+                    }
+                }
+
+                Icon(
+                    imageVector = Icons.Default.ArrowForward,
+                    contentDescription = null,
+                    tint = skin.textSecondary.copy(alpha = 0.6f),
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
     }
 }
 
@@ -533,7 +726,7 @@ private fun IntroToolCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(102.dp)
+                .heightIn(min = 100.dp)
                 .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {

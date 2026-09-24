@@ -481,39 +481,47 @@ fun CockpitTelemetryDeck(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        // ── 1. Telemetry Pod (Pitch & Roll Readouts) ──
+        // ── 1. Telemetry Pod (Pitch & Roll Readouts - Rock Solid Fixed Height) ──
         Surface(
-            modifier = Modifier.weight(1f),
-            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier
+                .weight(1f)
+                .height(54.dp),
+            shape = RoundedCornerShape(14.dp),
             color = skin.cardBackground,
             border = androidx.compose.foundation.BorderStroke(1.dp, skin.cardBorder)
         ) {
             Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                    .fillMaxSize()
+                    .padding(horizontal = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceAround
+                horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 // Pitch
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                Column(
+                    modifier = Modifier.weight(1f),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
                     Text(
                         text = "PITCH",
-                        fontSize = 10.sp,
+                        fontSize = 9.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = skin.textSecondary,
                         fontFamily = FontFamily.Default,
-                        letterSpacing = 0.5.sp
+                        letterSpacing = 0.5.sp,
+                        maxLines = 1,
+                        softWrap = false
                     )
                     Text(
                         text = String.format(Locale.US, "%+.1f°", pitch),
                         fontSize = 13.sp,
+                        lineHeight = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = if (abs(pitch) <= 0.6f) skin.primaryAccent else skin.textPrimary,
-                        fontFamily = FontFamily.Default
+                        fontFamily = FontFamily.Default,
+                        maxLines = 1,
+                        softWrap = false
                     )
                 }
 
@@ -521,63 +529,69 @@ fun CockpitTelemetryDeck(
                 Box(
                     modifier = Modifier
                         .width(1.dp)
-                        .height(16.dp)
+                        .height(26.dp)
                         .background(skin.cardBorder.copy(alpha = 0.8f))
                 )
 
                 // Roll
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(5.dp)
+                Column(
+                    modifier = Modifier.weight(1f),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
                     Text(
                         text = "ROLL",
-                        fontSize = 10.sp,
+                        fontSize = 9.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = skin.textSecondary,
                         fontFamily = FontFamily.Default,
-                        letterSpacing = 0.5.sp
+                        letterSpacing = 0.5.sp,
+                        maxLines = 1,
+                        softWrap = false
                     )
                     Text(
                         text = String.format(Locale.US, "%+.1f°", roll),
                         fontSize = 13.sp,
+                        lineHeight = 15.sp,
                         fontWeight = FontWeight.Bold,
                         color = if (abs(roll) <= 0.6f) skin.primaryAccent else skin.textPrimary,
-                        fontFamily = FontFamily.Default
+                        fontFamily = FontFamily.Default,
+                        maxLines = 1,
+                        softWrap = false
                     )
                 }
             }
         }
 
-        // ── 2. Distinct Bearing Lock Squircle Control ──
+        // ── 2. Distinct Bearing Lock Squircle Control (50dp accessible target) ──
         Box(
             modifier = Modifier
-                .size(44.dp)
+                .size(50.dp)
                 .clip(RoundedCornerShape(14.dp))
                 .background(
                     if (isBearingLocked) skin.primaryAccent.copy(alpha = 0.22f)
                     else skin.cardBackground
                 )
                 .border(
-                    1.dp,
-                    if (isBearingLocked) skin.primaryAccent else skin.cardBorder,
-                    RoundedCornerShape(14.dp)
+                    width = 1.dp,
+                    color = if (isBearingLocked) skin.primaryAccent else skin.cardBorder,
+                    shape = RoundedCornerShape(14.dp)
                 )
                 .clickable { onBearingLockToggle() },
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = if (isBearingLocked) Icons.Default.Lock else Icons.Default.LockOpen,
-                contentDescription = "Lock Heading",
+                contentDescription = if (isBearingLocked) "Unlock Heading" else "Lock Heading Bearing",
                 tint = if (isBearingLocked) skin.primaryAccent else skin.textPrimary,
-                modifier = Modifier.size(19.dp)
+                modifier = Modifier.size(20.dp)
             )
         }
 
-        // ── 3. Distinct Save Note Squircle Control ──
+        // ── 3. Distinct Save Note Squircle Control (50dp accessible target) ──
         Box(
             modifier = Modifier
-                .size(44.dp)
+                .size(50.dp)
                 .clip(RoundedCornerShape(14.dp))
                 .background(skin.cardBackground)
                 .border(1.dp, skin.cardBorder, RoundedCornerShape(14.dp))
@@ -586,9 +600,9 @@ fun CockpitTelemetryDeck(
         ) {
             Icon(
                 imageVector = Icons.Default.BookmarkAdd,
-                contentDescription = "Save Note",
+                contentDescription = "Save Compass Bearing Note",
                 tint = skin.primaryAccent,
-                modifier = Modifier.size(19.dp)
+                modifier = Modifier.size(20.dp)
             )
         }
     }

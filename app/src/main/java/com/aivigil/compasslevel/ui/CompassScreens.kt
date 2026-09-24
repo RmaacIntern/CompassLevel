@@ -251,27 +251,39 @@ fun ScreenLiveCompassView(
                 Spacer(modifier = Modifier.height(6.dp))
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(RoundedCornerShape(10.dp))
                         .background(AmberWarning.copy(alpha = 0.15f))
-                        .border(1.dp, AmberWarning.copy(alpha = 0.5f), RoundedCornerShape(8.dp))
-                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                        .border(1.dp, AmberWarning.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Info,
-                            contentDescription = null,
-                            tint = AmberWarning,
-                            modifier = Modifier.size(14.dp)
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Info,
+                                contentDescription = null,
+                                tint = AmberWarning,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Text(
+                                text = "DEVICE LACKS MAGNETIC SENSOR",
+                                color = AmberWarning,
+                                fontSize = 10.5.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily.Default
+                            )
+                        }
                         Text(
-                            text = "NO COMPASS SENSOR (GPS BEARING MODE)",
-                            color = AmberWarning,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Default
+                            text = "Move outdoors for GPS bearing • Spirit Level & Clinometer fully active",
+                            color = skin.textSecondary,
+                            fontSize = 9.5.sp,
+                            fontFamily = FontFamily.Default,
+                            textAlign = TextAlign.Center
                         )
                     }
                 }
@@ -476,16 +488,23 @@ fun ScreenContentView(
                 }
             }
 
-            // Readout X Angle
-            Text(
-                text = "${String.format(java.util.Locale.US, "%.1f", kotlin.math.abs(roll))}°\nX",
-                color = skin.textPrimary,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = FontFamily.Default,
-                textAlign = TextAlign.Center,
-                lineHeight = 16.sp
-            )
+            // Readout X Angle (Fixed width box prevents tube horizontal jitter)
+            Box(
+                modifier = Modifier.width(52.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "${String.format(java.util.Locale.US, "%.1f", kotlin.math.abs(roll))}°\nX",
+                    color = skin.textPrimary,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Default,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 16.sp,
+                    maxLines = 2,
+                    softWrap = false
+                )
+            }
         }
 
         // ── Main Instruments Area: Left Y-Tube + Center Bullseye ───────────
@@ -568,15 +587,22 @@ fun ScreenContentView(
 
                 Spacer(modifier = Modifier.height(6.dp))
 
-                Text(
-                    text = "Y\n${String.format(java.util.Locale.US, "%+.1f", pitch)}°",
-                    color = skin.textPrimary,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Default,
-                    textAlign = TextAlign.Center,
-                    lineHeight = 15.sp
-                )
+                Box(
+                    modifier = Modifier.width(54.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Y\n${String.format(java.util.Locale.US, "%+.1f", pitch)}°",
+                        color = skin.textPrimary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.Default,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 15.sp,
+                        maxLines = 2,
+                        softWrap = false
+                    )
+                }
             }
 
             // Center Circular Bullseye Level with 12 Degree Ticks

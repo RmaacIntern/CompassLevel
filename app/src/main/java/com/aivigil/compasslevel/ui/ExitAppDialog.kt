@@ -208,9 +208,11 @@ fun ExitAppDialog(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = if (ratingSubmitted) "Thank You for Rating!" else "Rate 5 Stars on Google Play",
+                            text = if (ratingSubmitted) "Thank You for Rating!" else "Rate on Google Play",
                             fontWeight = FontWeight.Bold,
-                            fontSize = 14.sp
+                            fontSize = 13.5.sp,
+                            maxLines = 1,
+                            softWrap = false
                         )
                     }
                 }

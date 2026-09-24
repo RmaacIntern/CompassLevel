@@ -58,26 +58,28 @@ fun SkinsModal(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
                     Text(
-                        text = "INSTRUMENT THEMES",
+                        text = "THEMES",
                         color = activePalette.textPrimary,
-                        fontSize = 17.sp,
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         fontFamily = FontFamily.Default,
                         letterSpacing = 0.5.sp
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(6.dp))
                             .background(Color(0xFFFFD700).copy(alpha = 0.2f))
-                            .padding(horizontal = 7.dp, vertical = 2.dp)
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
                     ) {
                         Text(
                             text = "6 PRESETS",
                             color = Color(0xFFFFD700),
-                            fontSize = 10.sp,
+                            fontSize = 9.5.sp,
                             fontWeight = FontWeight.Bold,
                             fontFamily = FontFamily.Default
                         )
@@ -87,7 +89,7 @@ fun SkinsModal(
                 IconButton(
                     onClick = onClose,
                     modifier = Modifier
-                        .size(36.dp)
+                        .size(40.dp)
                         .clip(CircleShape)
                         .background(activePalette.cardBackground)
                 ) {
@@ -127,7 +129,7 @@ fun SkinsModal(
                 }
             }
 
-            Spacer(modifier = Modifier.height(18.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             Text(
                 text = "Active Theme: ${currentSkin.displayName}",
@@ -136,7 +138,28 @@ fun SkinsModal(
                 fontWeight = FontWeight.Bold,
                 fontFamily = FontFamily.Default
             )
-            Spacer(modifier = Modifier.height(20.dp))
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Button(
+                onClick = onClose,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = activePalette.primaryAccent,
+                    contentColor = PureBlack
+                )
+            ) {
+                Text(
+                    text = "APPLY & CLOSE",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    letterSpacing = 0.5.sp
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }

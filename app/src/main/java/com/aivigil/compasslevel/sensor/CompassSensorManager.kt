@@ -197,11 +197,24 @@ class CompassSensorManager(context: Context) : SensorEventListener {
 
     fun setGpsBearing(gpsBearing: Float) {
         if (!hasMagnetometer) {
-            _headingFlow.value = gpsBearing
+            val norm = ((gpsBearing % 360f) + 360f) % 360f
+            _headingFlow.value = norm
             _compassState.value = _compassState.value.copy(
-                heading = gpsBearing,
+                heading = norm,
                 isReliable = true,
                 accuracyLevel = "GPS Bearing"
+            )
+        }
+    }
+
+    fun setManualHeading(heading: Float) {
+        if (!hasMagnetometer) {
+            val norm = ((heading % 360f) + 360f) % 360f
+            _headingFlow.value = norm
+            _compassState.value = _compassState.value.copy(
+                heading = norm,
+                isReliable = true,
+                accuracyLevel = "Manual Alignment"
             )
         }
     }
@@ -239,15 +252,12 @@ class CompassSensorManager(context: Context) : SensorEventListener {
         // Line of sight through camera (-Z): (-r[2], -r[5], -r[8])
 
         // 1. Tilt-Compensated Compass Heading:
-        // Seamlessly blends horizontal projection from flat (top forward) to upright (sight forward)
-        val topE = r[1]
-        val topN = r[4]
-        val sightE = -r[2]
-        val sightN = -r[5]
-
-        val tiltWeight = (r[7] * r[7]).coerceIn(0f, 1f)
-        val forwardE = (1f - tiltWeight) * topE + tiltWeight * sightE
-        val forwardN = (1f - tiltWeight) * topN + tiltWeight * sightN
+        // Top edge vector in world coordinates is (r[1], r[4], r[7]).
+        // Projected onto the horizontal ground plane (East-North), its azimuth is atan2(r[1], r[4]).
+        // If the phone is held nearly vertical (past ~60°), switch to line-of-sight (-Z camera vector: -r[2], -r[5]).
+        val isUpright = abs(r[7]) > 0.85f
+        val forwardE = if (isUpright) -r[2] else r[1]
+        val forwardN = if (isUpright) -r[5] else r[4]
 
         var targetHeading = Math.toDegrees(atan2(forwardE.toDouble(), forwardN.toDouble())).toFloat()
         if (targetHeading < 0f) targetHeading += 360f

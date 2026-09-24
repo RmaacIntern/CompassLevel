@@ -1,6 +1,7 @@
 package com.aivigil.compasslevel
 
 import android.Manifest
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -46,20 +47,33 @@ class MainActivity : ComponentActivity() {
         notesManager = MeasurementNotesManager(this)
         flashlightManager = FlashlightManager(this)
 
+        val prefs = getSharedPreferences("compass_prefs", Context.MODE_PRIVATE)
+        val savedSkinName = prefs.getString("saved_skin", AppSkin.CLASSIC_EMERALD.name) ?: AppSkin.CLASSIC_EMERALD.name
+        val initialSkin = try { AppSkin.valueOf(savedSkinName) } catch (e: Exception) { AppSkin.CLASSIC_EMERALD }
+
         setContent {
-            CompassLevelTheme {
+            val systemDark = isSystemInDarkTheme()
+            val initialDark = remember { prefs.getBoolean("saved_dark_mode", systemDark) }
+            var isDarkMode by remember { mutableStateOf(initialDark) }
+            var currentSkin by remember { mutableStateOf(initialSkin) }
+
+            LaunchedEffect(isDarkMode) {
+                prefs.edit().putBoolean("saved_dark_mode", isDarkMode).apply()
+            }
+
+            LaunchedEffect(currentSkin) {
+                prefs.edit().putString("saved_skin", currentSkin.name).apply()
+            }
+
+            CompassLevelTheme(isDarkMode = isDarkMode) {
                 val sensorState by sensorManager.compassState.collectAsState()
                 val locationState by locationManager.locationState.collectAsState()
                 val isFlashlightOn by flashlightManager.isTorchOn.collectAsState()
-
-                val systemDark = isSystemInDarkTheme()
-                var isDarkMode by remember { mutableStateOf(systemDark) }
 
                 var isIntroActive by remember { mutableStateOf(true) }
                 var showExitDialog by remember { mutableStateOf(false) }
 
                 var currentMode by remember { mutableStateOf("Compass") }
-                var currentSkin by remember { mutableStateOf(AppSkin.CLASSIC_EMERALD) }
                 val activePalette = remember(currentSkin, isDarkMode) { currentSkin.palette(isDarkMode) }
 
                 var showCalibrationModal by remember { mutableStateOf(false) }
@@ -151,6 +165,10 @@ class MainActivity : ComponentActivity() {
                             hasMagnetometer = sensorManager.hasMagnetometer,
                             hasLocationPermission = hasLocationPermission,
                             skin = activePalette,
+                            isDarkMode = isDarkMode,
+                            onThemeToggle = { isDarkMode = !isDarkMode },
+                            onSkinsClick = { showSkinsModal = true },
+                            onRateClick = { showExitDialog = true },
                             onStartTool = { selectedMode ->
                                 currentMode = selectedMode
                                 isIntroActive = false
@@ -342,7 +360,6 @@ class MainActivity : ComponentActivity() {
                         isDarkMode = isDarkMode,
                         onSkinSelected = { skin ->
                             currentSkin = skin
-                            showSkinsModal = false
                         },
                         onClose = { showSkinsModal = false }
                     )

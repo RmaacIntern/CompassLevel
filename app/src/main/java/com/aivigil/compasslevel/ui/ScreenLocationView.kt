@@ -29,6 +29,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aivigil.compasslevel.sensor.LocationData
@@ -274,14 +275,20 @@ fun ScreenLocationView(
                             color = skin.textPrimary,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Default
+                            fontFamily = FontFamily.Default,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
                         )
                         Text(
                             text = if (hasCoords) locationData.latitudeDms else "Acquiring...",
                             color = skin.primaryAccent,
                             fontSize = 12.sp,
                             fontFamily = FontFamily.Default,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
 
@@ -309,14 +316,20 @@ fun ScreenLocationView(
                             color = skin.textPrimary,
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Default
+                            fontFamily = FontFamily.Default,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
                         )
                         Text(
                             text = if (hasCoords) locationData.longitudeDms else "Acquiring...",
                             color = skin.primaryAccent,
                             fontSize = 12.sp,
                             fontFamily = FontFamily.Default,
-                            fontWeight = FontWeight.Medium
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
@@ -357,13 +370,19 @@ fun ScreenLocationView(
                             color = skin.textPrimary,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Default
+                            fontFamily = FontFamily.Default,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
                         )
                         Text(
                             text = "${locationData.altitudeFeet.toInt()} ft MSL",
                             color = skin.textSecondary,
                             fontSize = 11.sp,
-                            fontFamily = FontFamily.Default
+                            fontFamily = FontFamily.Default,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
@@ -398,13 +417,19 @@ fun ScreenLocationView(
                             color = skin.textPrimary,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
-                            fontFamily = FontFamily.Default
+                            fontFamily = FontFamily.Default,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
                         )
                         Text(
                             text = "km/h (${String.format(Locale.US, "%.1f", locationData.speedMph)} mph)",
                             color = skin.textSecondary,
                             fontSize = 11.sp,
-                            fontFamily = FontFamily.Default
+                            fontFamily = FontFamily.Default,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }

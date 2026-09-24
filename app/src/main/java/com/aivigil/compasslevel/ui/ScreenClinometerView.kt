@@ -192,7 +192,9 @@ fun ScreenClinometerView(
                                 fontSize = 48.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = if (abs(pitch) <= 0.5f) skin.primaryAccent else Color(0xFFFFD700),
-                                fontFamily = FontFamily.Default
+                                fontFamily = FontFamily.Default,
+                                maxLines = 1,
+                                softWrap = false
                             )
                         }
 
@@ -200,18 +202,23 @@ fun ScreenClinometerView(
                             horizontalArrangement = Arrangement.spacedBy(16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            val slopeDisplay = if (slopePercent > 999.9) ">999%" else "${String.format(Locale.US, "%.1f", slopePercent)}%"
                             Text(
-                                text = "SLOPE: ${String.format(Locale.US, "%.1f", slopePercent)}%",
+                                text = "SLOPE: $slopeDisplay",
                                 color = skin.textPrimary,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
-                                fontFamily = FontFamily.Default
+                                fontFamily = FontFamily.Default,
+                                maxLines = 1,
+                                softWrap = false
                             )
                             Text(
                                 text = "ROLL: ${String.format(Locale.US, "%+.1f°", roll)}",
                                 color = skin.textSecondary,
                                 fontSize = 12.sp,
-                                fontFamily = FontFamily.Default
+                                fontFamily = FontFamily.Default,
+                                maxLines = 1,
+                                softWrap = false
                             )
                         }
 
