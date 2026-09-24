@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import com.aivigil.compasslevel.data.MeasurementNotesManager
 import com.aivigil.compasslevel.sensor.CompassLocationManager
 import com.aivigil.compasslevel.sensor.CompassSensorManager
+import com.aivigil.compasslevel.sensor.CompassSoundManager
 import com.aivigil.compasslevel.sensor.FlashlightManager
 import com.aivigil.compasslevel.ui.*
 import com.aivigil.compasslevel.ui.theme.AppSkin
@@ -37,6 +38,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var locationManager: CompassLocationManager
     private lateinit var notesManager: MeasurementNotesManager
     private lateinit var flashlightManager: FlashlightManager
+    private lateinit var soundManager: CompassSoundManager
     private var isIntroScreenActive: Boolean = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -46,6 +48,7 @@ class MainActivity : ComponentActivity() {
         locationManager = CompassLocationManager(this)
         notesManager = MeasurementNotesManager(this)
         flashlightManager = FlashlightManager(this)
+        soundManager = CompassSoundManager(this)
 
         val prefs = getSharedPreferences("compass_prefs", Context.MODE_PRIVATE)
         val savedSkinName = prefs.getString("saved_skin", AppSkin.CLASSIC_EMERALD.name) ?: AppSkin.CLASSIC_EMERALD.name
@@ -54,8 +57,10 @@ class MainActivity : ComponentActivity() {
         setContent {
             val systemDark = isSystemInDarkTheme()
             val initialDark = remember { prefs.getBoolean("saved_dark_mode", systemDark) }
+            val initialSound = remember { prefs.getBoolean("compass_sound_enabled", true) }
             var isDarkMode by remember { mutableStateOf(initialDark) }
             var currentSkin by remember { mutableStateOf(initialSkin) }
+            var isSoundEnabled by remember { mutableStateOf(initialSound) }
 
             LaunchedEffect(isDarkMode) {
                 prefs.edit().putBoolean("saved_dark_mode", isDarkMode).apply()
@@ -63,6 +68,11 @@ class MainActivity : ComponentActivity() {
 
             LaunchedEffect(currentSkin) {
                 prefs.edit().putString("saved_skin", currentSkin.name).apply()
+            }
+
+            LaunchedEffect(isSoundEnabled) {
+                prefs.edit().putBoolean("compass_sound_enabled", isSoundEnabled).apply()
+                soundManager.setSoundEnabled(isSoundEnabled)
             }
 
             CompassLevelTheme(isDarkMode = isDarkMode) {
@@ -130,6 +140,13 @@ class MainActivity : ComponentActivity() {
                         sensorManager.stopListening()
                     } else {
                         sensorManager.startListening()
+                    }
+                }
+
+                // Safe Rotary Ratchet Click Feedback for Compass Mode
+                LaunchedEffect(sensorState.heading, currentMode, isIntroActive, isSoundEnabled) {
+                    if (currentMode == "Compass" && !isIntroActive && isSoundEnabled) {
+                        soundManager.onHeadingChanged(sensorState.heading)
                     }
                 }
 
@@ -314,7 +331,9 @@ class MainActivity : ComponentActivity() {
                                                 },
                                                 skin = activePalette,
                                                 locationData = locationState,
-                                                hasMagnetometer = sensorManager.hasMagnetometer
+                                                hasMagnetometer = sensorManager.hasMagnetometer,
+                                                isSoundEnabled = isSoundEnabled,
+                                                onSoundToggle = { isSoundEnabled = !isSoundEnabled }
                                             )
                                         }
                                     }
@@ -389,6 +408,8 @@ class MainActivity : ComponentActivity() {
                         onResetTare = {
                             sensorManager.resetTare()
                         },
+                        isSoundEnabled = isSoundEnabled,
+                        onSoundToggle = { isSoundEnabled = it },
                         onClose = { showSettingsModal = false }
                     )
                 }
@@ -430,6 +451,13 @@ class MainActivity : ComponentActivity() {
         }
         if (::flashlightManager.isInitialized) {
             flashlightManager.turnOff()
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (::soundManager.isInitialized) {
+            soundManager.release()
         }
     }
 }

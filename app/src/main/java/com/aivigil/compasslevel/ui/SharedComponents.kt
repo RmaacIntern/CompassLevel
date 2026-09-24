@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -472,14 +473,16 @@ fun CockpitTelemetryDeck(
     onBearingLockToggle: () -> Unit,
     onSaveNoteClick: () -> Unit,
     skin: SkinPalette,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isSoundEnabled: Boolean = true,
+    onSoundToggle: () -> Unit = {}
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
+            .padding(horizontal = 14.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         // ── 1. Telemetry Pod (Pitch & Roll Readouts - Rock Solid Fixed Height) ──
         Surface(
@@ -563,11 +566,11 @@ fun CockpitTelemetryDeck(
             }
         }
 
-        // ── 2. Distinct Bearing Lock Squircle Control (50dp accessible target) ──
+        // ── 2. Distinct Bearing Lock Squircle Control ──
         Box(
             modifier = Modifier
-                .size(50.dp)
-                .clip(RoundedCornerShape(14.dp))
+                .size(46.dp)
+                .clip(RoundedCornerShape(13.dp))
                 .background(
                     if (isBearingLocked) skin.primaryAccent.copy(alpha = 0.22f)
                     else skin.cardBackground
@@ -575,7 +578,7 @@ fun CockpitTelemetryDeck(
                 .border(
                     width = 1.dp,
                     color = if (isBearingLocked) skin.primaryAccent else skin.cardBorder,
-                    shape = RoundedCornerShape(14.dp)
+                    shape = RoundedCornerShape(13.dp)
                 )
                 .clickable { onBearingLockToggle() },
             contentAlignment = Alignment.Center
@@ -584,17 +587,42 @@ fun CockpitTelemetryDeck(
                 imageVector = if (isBearingLocked) Icons.Default.Lock else Icons.Default.LockOpen,
                 contentDescription = if (isBearingLocked) "Unlock Heading" else "Lock Heading Bearing",
                 tint = if (isBearingLocked) skin.primaryAccent else skin.textPrimary,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(19.dp)
             )
         }
 
-        // ── 3. Distinct Save Note Squircle Control (50dp accessible target) ──
+        // ── 3. Rotary Dial Sound Toggle Squircle Control ──
         Box(
             modifier = Modifier
-                .size(50.dp)
-                .clip(RoundedCornerShape(14.dp))
+                .size(46.dp)
+                .clip(RoundedCornerShape(13.dp))
+                .background(
+                    if (isSoundEnabled) skin.primaryAccent.copy(alpha = 0.20f)
+                    else skin.cardBackground
+                )
+                .border(
+                    width = 1.dp,
+                    color = if (isSoundEnabled) skin.primaryAccent else skin.cardBorder,
+                    shape = RoundedCornerShape(13.dp)
+                )
+                .clickable { onSoundToggle() },
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = if (isSoundEnabled) Icons.AutoMirrored.Filled.VolumeUp else Icons.AutoMirrored.Filled.VolumeOff,
+                contentDescription = if (isSoundEnabled) "Mute Rotating Click Sound" else "Enable Rotating Click Sound",
+                tint = if (isSoundEnabled) skin.primaryAccent else skin.textSecondary,
+                modifier = Modifier.size(19.dp)
+            )
+        }
+
+        // ── 4. Distinct Save Note Squircle Control ──
+        Box(
+            modifier = Modifier
+                .size(46.dp)
+                .clip(RoundedCornerShape(13.dp))
                 .background(skin.cardBackground)
-                .border(1.dp, skin.cardBorder, RoundedCornerShape(14.dp))
+                .border(1.dp, skin.cardBorder, RoundedCornerShape(13.dp))
                 .clickable { onSaveNoteClick() },
             contentAlignment = Alignment.Center
         ) {
@@ -602,7 +630,7 @@ fun CockpitTelemetryDeck(
                 imageVector = Icons.Default.BookmarkAdd,
                 contentDescription = "Save Compass Bearing Note",
                 tint = skin.primaryAccent,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(19.dp)
             )
         }
     }

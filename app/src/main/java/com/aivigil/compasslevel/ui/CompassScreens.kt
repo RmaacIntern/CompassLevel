@@ -141,7 +141,9 @@ fun ScreenLiveCompassView(
     onSaveNoteClick: (heading: Float, cardinal: String) -> Unit = { _, _ -> },
     skin: SkinPalette,
     locationData: LocationData = LocationData(),
-    hasMagnetometer: Boolean = true
+    hasMagnetometer: Boolean = true,
+    isSoundEnabled: Boolean = true,
+    onSoundToggle: () -> Unit = {}
 ) {
     val cardinal = when (heading) {
         in 22.5f..67.5f   -> "NE"
@@ -338,7 +340,9 @@ fun ScreenLiveCompassView(
                 isBearingLocked = isBearingLocked,
                 onBearingLockToggle = onBearingLockToggle,
                 onSaveNoteClick = { onSaveNoteClick(heading, cardinal) },
-                skin = skin
+                skin = skin,
+                isSoundEnabled = isSoundEnabled,
+                onSoundToggle = onSoundToggle
             )
         }
     }
@@ -356,7 +360,9 @@ fun ScreenLiveCompassView(
     onSaveNoteClick: (heading: Float, cardinal: String) -> Unit = { _, _ -> },
     skin: AppSkin = AppSkin.CLASSIC_EMERALD,
     locationData: LocationData = LocationData(),
-    hasMagnetometer: Boolean = true
+    hasMagnetometer: Boolean = true,
+    isSoundEnabled: Boolean = true,
+    onSoundToggle: () -> Unit = {}
 ) {
     ScreenLiveCompassView(
         heading = heading,
@@ -369,7 +375,9 @@ fun ScreenLiveCompassView(
         onSaveNoteClick = onSaveNoteClick,
         skin = skin.palette(true),
         locationData = locationData,
-        hasMagnetometer = hasMagnetometer
+        hasMagnetometer = hasMagnetometer,
+        isSoundEnabled = isSoundEnabled,
+        onSoundToggle = onSoundToggle
     )
 }
 
@@ -1166,6 +1174,8 @@ fun SettingsBottomSheet(
     onPercentGradeToggle: (Boolean) -> Unit,
     onCalibrateClick: () -> Unit = {},
     onResetTare: () -> Unit = {},
+    isSoundEnabled: Boolean = true,
+    onSoundToggle: (Boolean) -> Unit = {},
     onClose: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -1462,6 +1472,52 @@ fun SettingsBottomSheet(
                 }
             }
 
+            // Card: Rotating Click Sound & Haptics Feedback
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(skin.cardBackground)
+                    .border(1.dp, skin.cardBorder, RoundedCornerShape(14.dp))
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "ROTATING CLICK SOUND",
+                            color = skin.textSecondary,
+                            fontSize = 11.sp,
+                            fontFamily = FontFamily.Default,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.sp
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Tactile ratchet clicks & haptics when rotating compass",
+                            color = skin.textSecondary.copy(alpha = 0.8f),
+                            fontSize = 10.5.sp,
+                            fontFamily = FontFamily.Default
+                        )
+                    }
+
+                    Switch(
+                        checked = isSoundEnabled,
+                        onCheckedChange = onSoundToggle,
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = skin.primaryAccent,
+                            checkedTrackColor = skin.primaryAccent.copy(alpha = 0.35f),
+                            uncheckedThumbColor = skin.textSecondary,
+                            uncheckedTrackColor = skin.cardElevated
+                        )
+                    )
+                }
+            }
+
             // Card 3: Calibration & Hardware Diagnostics (For future calibration)
             Column(
                 modifier = Modifier
@@ -1633,6 +1689,8 @@ fun SettingsBottomSheet(
     onPercentGradeToggle: (Boolean) -> Unit,
     onCalibrateClick: () -> Unit = {},
     onResetTare: () -> Unit = {},
+    isSoundEnabled: Boolean = true,
+    onSoundToggle: (Boolean) -> Unit = {},
     onClose: () -> Unit
 ) {
     SettingsBottomSheet(
@@ -1647,6 +1705,8 @@ fun SettingsBottomSheet(
         onPercentGradeToggle = onPercentGradeToggle,
         onCalibrateClick = onCalibrateClick,
         onResetTare = onResetTare,
+        isSoundEnabled = isSoundEnabled,
+        onSoundToggle = onSoundToggle,
         onClose = onClose
     )
 }
