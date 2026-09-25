@@ -1,4 +1,4 @@
-﻿# ProGuard / R8 Rules for Compass & Spirit Level
+# ProGuard / R8 Rules for Compass & Spirit Level
 
 # Compose runtime rules
 -keepattributes *Annotation*
@@ -7,9 +7,10 @@
     @androidx.compose.runtime.ReadOnlyComposable *;
 }
 
-# Preserve App Data and Sensor State Models
+# Preserve App Data, Ads, and Sensor State Models
 -keep class com.aivigil.compasslevel.data.** { *; }
 -keep class com.aivigil.compasslevel.sensor.** { *; }
+-keep class com.aivigil.compasslevel.ads.** { *; }
 -keep class com.aivigil.compasslevel.ui.theme.** { *; }
 
 # Google Play Services Location

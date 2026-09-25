@@ -22,11 +22,14 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import com.aivigil.compasslevel.data.MeasurementNotesManager
+import com.aivigil.compasslevel.ads.AdManager
 import com.aivigil.compasslevel.sensor.CompassLocationManager
 import com.aivigil.compasslevel.sensor.CompassSensorManager
 import com.aivigil.compasslevel.sensor.CompassSoundManager
 import com.aivigil.compasslevel.sensor.FlashlightManager
 import com.aivigil.compasslevel.ui.*
+import com.aivigil.compasslevel.ui.ads.BannerAdView
+import com.aivigil.compasslevel.ui.ads.InterstitialAdDialog
 import com.aivigil.compasslevel.ui.theme.AppSkin
 import com.aivigil.compasslevel.ui.theme.CompassLevelTheme
 import com.aivigil.compasslevel.ui.theme.PureBlack
@@ -39,6 +42,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var notesManager: MeasurementNotesManager
     private lateinit var flashlightManager: FlashlightManager
     private lateinit var soundManager: CompassSoundManager
+    private lateinit var adManager: AdManager
     private var isIntroScreenActive: Boolean = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -49,6 +53,7 @@ class MainActivity : ComponentActivity() {
         notesManager = MeasurementNotesManager(this)
         flashlightManager = FlashlightManager(this)
         soundManager = CompassSoundManager(this)
+        adManager = AdManager(this)
 
         val prefs = getSharedPreferences("compass_prefs", Context.MODE_PRIVATE)
         val savedSkinName = prefs.getString("saved_skin", AppSkin.CLASSIC_EMERALD.name) ?: AppSkin.CLASSIC_EMERALD.name
@@ -167,7 +172,9 @@ class MainActivity : ComponentActivity() {
 
                 // Intercept hardware and gesture back navigation:
                 BackHandler(enabled = true) {
-                    if (showNotesModal || showSkinsModal || showSettingsModal || showCalibrationModal) {
+                    if (adManager.isInterstitialVisible) {
+                        adManager.dismissInterstitial()
+                    } else if (showNotesModal || showSkinsModal || showSettingsModal || showCalibrationModal) {
                         showNotesModal = false
                         showSkinsModal = false
                         showSettingsModal = false
@@ -219,11 +226,19 @@ class MainActivity : ComponentActivity() {
                                 onSkinsClick = { showSkinsModal = true },
                                 onRateClick = { showExitDialog = true },
                                 onStartTool = { selectedMode ->
-                                    currentMode = selectedMode
-                                    isIntroActive = false
-                                    if (selectedMode == "Location" && locationManager.hasLocationPermission()) {
-                                        locationManager.startLocationUpdates()
+                                    adManager.maybeShowInterstitial {
+                                        currentMode = selectedMode
+                                        isIntroActive = false
+                                        if (selectedMode == "Location" && locationManager.hasLocationPermission()) {
+                                            locationManager.startLocationUpdates()
+                                        }
                                     }
+                                },
+                                adSlot = {
+                                    BannerAdView(
+                                        creative = adManager.currentBannerCreative,
+                                        skin = activePalette
+                                    )
                                 }
                             )
                         }
@@ -246,16 +261,27 @@ class MainActivity : ComponentActivity() {
                                 )
                             },
                             bottomBar = {
-                                GoogleNavigationBar(
-                                    selectedMode = currentMode,
-                                    skin = activePalette,
-                                    onModeSelected = { mode ->
-                                        currentMode = mode
-                                        if (mode == "Location" && locationManager.hasLocationPermission()) {
-                                            locationManager.startLocationUpdates()
+                                Column {
+                                    // Persistent Bottom Banner Ad right above Navigation Bar
+                                    BannerAdView(
+                                        creative = adManager.currentBannerCreative,
+                                        skin = activePalette
+                                    )
+                                    GoogleNavigationBar(
+                                        selectedMode = currentMode,
+                                        skin = activePalette,
+                                        onModeSelected = { mode ->
+                                            if (currentMode != mode) {
+                                                adManager.maybeShowInterstitial {
+                                                    currentMode = mode
+                                                    if (mode == "Location" && locationManager.hasLocationPermission()) {
+                                                        locationManager.startLocationUpdates()
+                                                    }
+                                                }
+                                            }
                                         }
-                                    }
-                                )
+                                    )
+                                }
                             },
                             contentWindowInsets = WindowInsets(0, 0, 0, 0),
                             containerColor = activePalette.appBackground
@@ -465,6 +491,17 @@ class MainActivity : ComponentActivity() {
                         onConfirmExit = { finishAffinity() }
                     )
                 }
+
+                // ── FULL-SCREEN INTERSTITIAL AD SIMULATION ───────────────────
+                if (adManager.isInterstitialVisible) {
+                    InterstitialAdDialog(
+                        creative = adManager.currentInterstitialCreative,
+                        skin = activePalette,
+                        onDismiss = {
+                            adManager.dismissInterstitial()
+                        }
+                    )
+                }
             }
         }
     }
@@ -494,6 +531,9 @@ class MainActivity : ComponentActivity() {
         super.onDestroy()
         if (::soundManager.isInitialized) {
             soundManager.release()
+        }
+        if (::adManager.isInitialized) {
+            adManager.release()
         }
     }
 }
