@@ -19,3 +19,20 @@
 # AndroidX Camera
 -keep class androidx.camera.** { *; }
 -dontwarn androidx.camera.**
+
+# Google Mobile Ads (AdMob)
+-keep class com.google.android.gms.ads.** { *; }
+-dontwarn com.google.android.gms.ads.**
+
+# AndroidX WorkManager, Room, and Startup (used transitively by Google Mobile Ads)
+-keep class androidx.work.** { *; }
+-dontwarn androidx.work.**
+-keep class androidx.room.** { *; }
+-dontwarn androidx.room.**
+-keep class androidx.startup.** { *; }
+-dontwarn androidx.startup.**
+-keep class * extends androidx.room.RoomDatabase { *; }
+-keepclassmembers class * extends androidx.room.RoomDatabase {
+    void <init>();
+}
+

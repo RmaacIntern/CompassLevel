@@ -28,6 +28,7 @@ import com.aivigil.compasslevel.sensor.CompassSensorManager
 import com.aivigil.compasslevel.sensor.CompassSoundManager
 import com.aivigil.compasslevel.sensor.FlashlightManager
 import com.aivigil.compasslevel.ui.*
+import com.aivigil.compasslevel.ui.ads.AdmobAdaptiveBannerView
 import com.aivigil.compasslevel.ui.ads.BannerAdView
 import com.aivigil.compasslevel.ui.ads.InterstitialAdDialog
 import com.aivigil.compasslevel.ui.theme.AppSkin
@@ -210,8 +211,11 @@ class MainActivity : ComponentActivity() {
                             // ── SCREEN: CINEMATIC ANIMATED LAUNCH SCREEN ────────────────────
                             ScreenOpeningAnimatedView(
                                 skin = activePalette,
+                                adManager = adManager,
                                 onAnimationComplete = {
-                                    isOpeningSplashActive = false
+                                    adManager.showPostSplashInterstitial(this@MainActivity) {
+                                        isOpeningSplashActive = false
+                                    }
                                 }
                             )
                         }
@@ -226,7 +230,7 @@ class MainActivity : ComponentActivity() {
                                 onSkinsClick = { showSkinsModal = true },
                                 onRateClick = { showExitDialog = true },
                                 onStartTool = { selectedMode ->
-                                    adManager.maybeShowInterstitial {
+                                    adManager.maybeShowInterstitial(this@MainActivity) {
                                         currentMode = selectedMode
                                         isIntroActive = false
                                         if (selectedMode == "Location" && locationManager.hasLocationPermission()) {
@@ -235,8 +239,8 @@ class MainActivity : ComponentActivity() {
                                     }
                                 },
                                 adSlot = {
-                                    BannerAdView(
-                                        creative = adManager.currentBannerCreative,
+                                    AdmobAdaptiveBannerView(
+                                        fallbackCreative = adManager.currentBannerCreative,
                                         skin = activePalette
                                     )
                                 }
@@ -262,9 +266,9 @@ class MainActivity : ComponentActivity() {
                             },
                             bottomBar = {
                                 Column {
-                                    // Persistent Bottom Banner Ad right above Navigation Bar
-                                    BannerAdView(
-                                        creative = adManager.currentBannerCreative,
+                                    // Persistent Bottom Adaptive Banner Ad right above Navigation Bar
+                                    AdmobAdaptiveBannerView(
+                                        fallbackCreative = adManager.currentBannerCreative,
                                         skin = activePalette
                                     )
                                     GoogleNavigationBar(
@@ -272,7 +276,7 @@ class MainActivity : ComponentActivity() {
                                         skin = activePalette,
                                         onModeSelected = { mode ->
                                             if (currentMode != mode) {
-                                                adManager.maybeShowInterstitial {
+                                                adManager.maybeShowInterstitial(this@MainActivity) {
                                                     currentMode = mode
                                                     if (mode == "Location" && locationManager.hasLocationPermission()) {
                                                         locationManager.startLocationUpdates()

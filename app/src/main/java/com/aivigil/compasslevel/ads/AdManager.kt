@@ -1,10 +1,18 @@
 package com.aivigil.compasslevel.ads
 
+import android.app.Activity
 import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.google.android.gms.ads.AdError
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.FullScreenContentCallback
+import com.google.android.gms.ads.LoadAdError
+import com.google.android.gms.ads.MobileAds
+import com.google.android.gms.ads.interstitial.InterstitialAd
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import kotlinx.coroutines.*
 
 data class AdCreative(
@@ -20,8 +28,11 @@ data class AdCreative(
 )
 
 /**
- * AdManager: Offline simulation of commercial ad monetization (Google AdMob / Unity Ads model).
- * Manages banner campaign rotation, interstitial frequency capping (35s cooldown), and dialog callbacks.
+ * AdManager: Handles Google Mobile Ads (AdMob) SDK integration and smart offline fallback.
+ * - Initializes AdMob SDK
+ * - Preloads real AdMob Interstitial Ads (Sample Unit ID: ca-app-pub-3940256099942544/1033173712)
+ * - Displays Interstitial right after Splash screen (as requested by leadership)
+ * - Provides seamless fallback to interactive in-app dialog if offline or rate-limited
  */
 class AdManager(private val context: Context) {
 
@@ -87,16 +98,42 @@ class AdManager(private val context: Context) {
     private var lastInterstitialTimeMs: Long = 0L
     private var interactionCount: Int by mutableIntStateOf(0)
 
-    // Cooldown duration between interstitials (35 seconds as selected by user)
-    private val cooldownMs = 35_000L
-    // Require at least 2 interactions or cooldown elapsed
-    private val minInteractionsBeforeAd = 2
+    // Real AdMob Interstitial instance
+    private var admobInterstitial: InterstitialAd? = null
+    private val interstitialSampleUnitId = "ca-app-pub-3940256099942544/1033173712"
 
+    private val cooldownMs = 30_000L
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var bannerRotationJob: Job? = null
 
     init {
+        // Initialize Google Mobile Ads SDK
+        try {
+            MobileAds.initialize(context) {
+                loadAdmobInterstitial()
+            }
+        } catch (e: Exception) {
+            // Silently fall back to simulation
+        }
         startBannerRotation()
+    }
+
+    private fun loadAdmobInterstitial() {
+        val adRequest = AdRequest.Builder().build()
+        InterstitialAd.load(
+            context,
+            interstitialSampleUnitId,
+            adRequest,
+            object : InterstitialAdLoadCallback() {
+                override fun onAdLoaded(interstitialAd: InterstitialAd) {
+                    admobInterstitial = interstitialAd
+                }
+
+                override fun onAdFailedToLoad(loadAdError: LoadAdError) {
+                    admobInterstitial = null
+                }
+            }
+        )
     }
 
     private fun startBannerRotation() {
@@ -104,7 +141,7 @@ class AdManager(private val context: Context) {
         bannerRotationJob = scope.launch {
             var index = 0
             while (isActive) {
-                delay(20_000L) // Rotate banner every 20 seconds
+                delay(20_000L)
                 index = (index + 1) % sampleCreatives.size
                 currentBannerCreative = sampleCreatives[index]
             }
@@ -112,45 +149,53 @@ class AdManager(private val context: Context) {
     }
 
     /**
-     * Checks if cooldown and interaction criteria are met.
-     * If eligible, displays the full-screen interstitial ad and executes [onProceed] when dismissed.
-     * If within cooldown, immediately executes [onProceed] with zero delay to maintain silky-smooth UX.
+     * Shows an Interstitial Ad immediately after the Splash screen completes.
+     * Tries live AdMob interstitial first; if not loaded/offline, displays our in-app interstitial dialog.
      */
-    fun maybeShowInterstitial(onProceed: () -> Unit) {
-        val now = System.currentTimeMillis()
-        interactionCount++
+    fun showPostSplashInterstitial(activity: Activity?, onProceed: () -> Unit) {
+        val ad = admobInterstitial
+        if (ad != null && activity != null) {
+            ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+                override fun onAdDismissedFullScreenContent() {
+                    admobInterstitial = null
+                    loadAdmobInterstitial()
+                    lastInterstitialTimeMs = System.currentTimeMillis()
+                    onProceed()
+                }
 
-        val cooldownElapsed = (now - lastInterstitialTimeMs) >= cooldownMs
-        val enoughInteractions = interactionCount >= minInteractionsBeforeAd
-
-        if (cooldownElapsed && enoughInteractions) {
-            // Pick next creative for variety
-            val nextIndex = (sampleCreatives.indexOf(currentInterstitialCreative) + 1) % sampleCreatives.size
-            currentInterstitialCreative = sampleCreatives[nextIndex]
-            onInterstitialDismissed = onProceed
-            lastInterstitialTimeMs = now
-            interactionCount = 0
-            isInterstitialVisible = true
+                override fun onAdFailedToShowFullScreenContent(adError: AdError) {
+                    admobInterstitial = null
+                    loadAdmobInterstitial()
+                    onProceed()
+                }
+            }
+            ad.show(activity)
         } else {
-            // Cooldown active: proceed immediately without disrupting the user
-            onProceed()
+            // Fallback to rich in-app interstitial
+            onInterstitialDismissed = onProceed
+            lastInterstitialTimeMs = System.currentTimeMillis()
+            isInterstitialVisible = true
         }
     }
 
     /**
-     * Force-displays an interstitial ad (e.g. for specific milestone buttons)
+     * Checks cooldown and interaction count before showing an interstitial on tool transitions.
      */
-    fun forceShowInterstitial(onProceed: () -> Unit) {
+    fun maybeShowInterstitial(activity: Activity?, onProceed: () -> Unit) {
         val now = System.currentTimeMillis()
-        lastInterstitialTimeMs = now
-        interactionCount = 0
-        onInterstitialDismissed = onProceed
-        isInterstitialVisible = true
+        interactionCount++
+
+        val cooldownElapsed = (now - lastInterstitialTimeMs) >= cooldownMs
+        val enoughInteractions = interactionCount >= 2
+
+        if (cooldownElapsed && enoughInteractions) {
+            interactionCount = 0
+            showPostSplashInterstitial(activity, onProceed)
+        } else {
+            onProceed()
+        }
     }
 
-    /**
-     * Called when the user clicks Skip, Close, or the countdown completes and they dismiss the ad.
-     */
     fun dismissInterstitial() {
         if (isInterstitialVisible) {
             isInterstitialVisible = false
