@@ -3,26 +3,30 @@ package com.aivigil.compasslevel.ui
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Explore
+import androidx.compose.material.icons.filled.SquareFoot
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.aivigil.compasslevel.ui.ads.AdmobAdaptiveBannerView
@@ -32,13 +36,9 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /**
- * ScreenOpeningAnimatedView: Loading Splash Screen with real Google AdMob banners.
- * Features:
- * - Top AdMob Adaptive Banner (real Google AdMob ad)
- * - Central App Branding with rotating precision compass dial & "App Loading..."
- * - Animated loading progress bar (0% -> 100%)
- * - Bottom AdMob Adaptive Banner (real Google AdMob ad)
- * - Seamless transition to main introductory screen upon load or skip
+ * ScreenOpeningAnimatedView: Branded Splash Screen modeled after standard production apps
+ * (Referencing modern Android utility apps: Hero Logo + Title + Tagline + Loading Bar + Bottom AdBanner).
+ * Once loading completes, triggers onAnimationComplete to immediately launch AdMob Interstitial.
  */
 @Composable
 fun ScreenOpeningAnimatedView(
@@ -47,57 +47,61 @@ fun ScreenOpeningAnimatedView(
 ) {
     var animationStarted by remember { mutableStateOf(false) }
 
-    // Compass Dial Entrance Animation
-    val dialScale by animateFloatAsState(
-        targetValue = if (animationStarted) 1.0f else 0.70f,
+    // ── Smooth Entrance & Progress Animations ────────────────────────
+    val heroScale by animateFloatAsState(
+        targetValue = if (animationStarted) 1f else 0.72f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessLow
         ),
-        label = "dial_scale"
+        label = "hero_scale"
     )
 
-    val dialAlpha by animateFloatAsState(
-        targetValue = if (animationStarted) 1.0f else 0.0f,
-        animationSpec = tween(durationMillis = 600, easing = FastOutSlowInEasing),
-        label = "dial_alpha"
+    val contentAlpha by animateFloatAsState(
+        targetValue = if (animationStarted) 1f else 0f,
+        animationSpec = tween(durationMillis = 700, easing = FastOutSlowInEasing),
+        label = "content_alpha"
     )
 
-    // Needle Sweep & Alignment to True North
-    val needleRotation by animateFloatAsState(
-        targetValue = if (animationStarted) 0.0f else -140f,
-        animationSpec = spring(
-            dampingRatio = 0.58f,
-            stiffness = Spring.StiffnessLow
-        ),
-        label = "needle_rotation"
+    // Needle sweep alignment
+    val needleAngle by animateFloatAsState(
+        targetValue = if (animationStarted) 0f else -135f,
+        animationSpec = spring(dampingRatio = 0.55f, stiffness = Spring.StiffnessLow),
+        label = "needle_angle"
     )
 
-    // Text & Branding Entrance
-    val textAlpha by animateFloatAsState(
-        targetValue = if (animationStarted) 1.0f else 0.0f,
-        animationSpec = tween(durationMillis = 600, delayMillis = 200, easing = FastOutSlowInEasing),
-        label = "text_alpha"
-    )
-
-    // Loading Progress Fill (0% -> 100% over 2.8 seconds)
+    // Animated Loading Progress Bar (0% -> 100% over 2.9 seconds)
     val progressAnim by animateFloatAsState(
-        targetValue = if (animationStarted) 1.0f else 0.0f,
-        animationSpec = tween(durationMillis = 2800, delayMillis = 150, easing = LinearOutSlowInEasing),
+        targetValue = if (animationStarted) 1f else 0f,
+        animationSpec = tween(durationMillis = 2900, delayMillis = 150, easing = LinearOutSlowInEasing),
         label = "progress_anim"
     )
 
-    // Ambient Glowing Pulsing
+    // Subtle ambient pulsing glow behind icon
     val infiniteTransition = rememberInfiniteTransition(label = "ambient_glow")
-    val glowPulse by infiniteTransition.animateFloat(
-        initialValue = 0.25f,
-        targetValue = 0.55f,
-        animationSpec = infiniteRepeatable(tween(1400, easing = FastOutSlowInEasing), RepeatMode.Reverse),
-        label = "pulse"
+    val pulseGlow by infiniteTransition.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 0.75f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulse_glow"
+    )
+
+    val ringRotation by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(12000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "ring_rotation"
     )
 
     LaunchedEffect(Unit) {
         animationStarted = true
+        // Allow loading bar to reach 100%, then trigger interstitial ad
         delay(3200L)
         onAnimationComplete()
     }
@@ -105,11 +109,20 @@ fun ScreenOpeningAnimatedView(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(skin.appBackground)
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFF070B10),
+                        Color(0xFF0F1722),
+                        Color(0xFF070B10)
+                    )
+                )
+            )
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
             ) {
+                // Allow fast tap-through to proceed
                 onAnimationComplete()
             }
             .statusBarsPadding()
@@ -117,161 +130,195 @@ fun ScreenOpeningAnimatedView(
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(vertical = 8.dp),
+                .fillMaxSize(),
             verticalArrangement = Arrangement.SpaceBetween,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // ═══════════════════════════════════════════════════════════
-            // ── 1. TOP — REAL GOOGLE ADMOB ADAPTIVE BANNER ──────────────
-            // ═══════════════════════════════════════════════════════════
-            AdmobAdaptiveBannerView(skin = skin)
 
-            // ═══════════════════════════════════════════════════════════
-            // ── 2. CENTER — LOADING & COMPASS BRANDING ───────────────────
-            // ═══════════════════════════════════════════════════════════
+            // ═════════════════════════════════════════════════════════════
+            // ── TOP SPACER (Keeps hero art centered & uncluttered) ──────
+            // ═════════════════════════════════════════════════════════════
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // ═════════════════════════════════════════════════════════════
+            // ── CENTER HERO SECTION (Like the reference video) ──────────
+            // ═════════════════════════════════════════════════════════════
             Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 12.dp)
+                    .weight(1f)
+                    .padding(horizontal = 28.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                // Compass Dial
+
+                // ── 1. Hero App Icon Card with Glowing Border & Ambient Halo ──
                 Box(
                     modifier = Modifier
-                        .size(170.dp)
-                        .scale(dialScale)
-                        .alpha(dialAlpha),
+                        .size(130.dp)
+                        .scale(heroScale)
+                        .alpha(contentAlpha),
                     contentAlignment = Alignment.Center
                 ) {
-                    Canvas(modifier = Modifier.fillMaxSize()) {
-                        val center = Offset(size.width / 2, size.height / 2)
-                        val outerRadius = size.width / 2 - 4.dp.toPx()
-                        val innerRadius = outerRadius - 12.dp.toPx()
+                    // Ambient radial glow behind the card
+                    Box(
+                        modifier = Modifier
+                            .size(180.dp)
+                            .background(
+                                Brush.radialGradient(
+                                    colors = listOf(
+                                        skin.primaryAccent.copy(alpha = 0.38f * pulseGlow),
+                                        Color.Transparent
+                                    )
+                                )
+                            )
+                    )
 
-                        // Ambient Glow
-                        drawCircle(
-                            brush = Brush.radialGradient(
-                                colors = listOf(
-                                    skin.primaryAccent.copy(alpha = 0.35f * glowPulse),
-                                    Color.Transparent
+                    // Rounded App Icon Card
+                    Box(
+                        modifier = Modifier
+                            .size(110.dp)
+                            .shadow(16.dp, RoundedCornerShape(26.dp), spotColor = skin.primaryAccent)
+                            .clip(RoundedCornerShape(26.dp))
+                            .background(
+                                Brush.linearGradient(
+                                    colors = listOf(
+                                        Color(0xFF1B2433),
+                                        Color(0xFF0D131C)
+                                    )
+                                )
+                            )
+                            .border(
+                                width = 1.5.dp,
+                                brush = Brush.linearGradient(
+                                    colors = listOf(
+                                        skin.primaryAccent.copy(alpha = 0.8f),
+                                        skin.primaryAccent.copy(alpha = 0.2f),
+                                        skin.primaryAccent.copy(alpha = 0.6f)
+                                    )
                                 ),
-                                center = center,
-                                radius = size.width / 1.5f
-                            )
-                        )
+                                shape = RoundedCornerShape(26.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        // High-tech Compass & Gyroscope dial graphic inside logo
+                        Canvas(modifier = Modifier.size(90.dp)) {
+                            val center = Offset(size.width / 2f, size.height / 2f)
+                            val r = size.width / 2f - 4.dp.toPx()
 
-                        // Outer Metallic Ring
-                        drawCircle(
-                            color = skin.cardBorder,
-                            radius = outerRadius,
-                            center = center,
-                            style = Stroke(width = 2.dp.toPx())
-                        )
-
-                        // Secondary Dial Bezel
-                        drawCircle(
-                            color = skin.cardElevated,
-                            radius = innerRadius,
-                            center = center,
-                            style = Stroke(width = 1.dp.toPx())
-                        )
-
-                        // Degree Ticks
-                        for (deg in 0 until 360 step 30) {
-                            val rad = Math.toRadians(deg.toDouble())
-                            val isCardinal = deg % 90 == 0
-                            val tickLen = if (isCardinal) 10.dp.toPx() else 5.dp.toPx()
-                            val tickColor = if (isCardinal) skin.primaryAccent else skin.textSecondary.copy(alpha = 0.5f)
-                            val strokeW = if (isCardinal) 2.dp.toPx() else 1.dp.toPx()
-
-                            val startX = (center.x + (innerRadius - tickLen) * cos(rad)).toFloat()
-                            val startY = (center.y + (innerRadius - tickLen) * sin(rad)).toFloat()
-                            val endX = (center.x + innerRadius * cos(rad)).toFloat()
-                            val endY = (center.y + innerRadius * sin(rad)).toFloat()
-
-                            drawLine(
-                                color = tickColor,
-                                start = Offset(startX, startY),
-                                end = Offset(endX, endY),
-                                strokeWidth = strokeW,
-                                cap = StrokeCap.Round
-                            )
-                        }
-
-                        // Rotating Needle
-                        rotate(needleRotation, pivot = center) {
-                            val needleHalfWidth = 6.dp.toPx()
-                            val needleLength = innerRadius - 14.dp.toPx()
-
-                            val northPath = Path().apply {
-                                moveTo(center.x, center.y - needleLength)
-                                lineTo(center.x + needleHalfWidth, center.y)
-                                lineTo(center.x, center.y - 3.dp.toPx())
-                                close()
+                            // Rotating tick ring
+                            rotate(ringRotation, pivot = center) {
+                                for (deg in 0 until 360 step 30) {
+                                    val rad = Math.toRadians(deg.toDouble())
+                                    val isCard = deg % 90 == 0
+                                    val len = if (isCard) 6.dp.toPx() else 3.dp.toPx()
+                                    val col = if (isCard) skin.primaryAccent else skin.textSecondary.copy(alpha = 0.4f)
+                                    drawLine(
+                                        color = col,
+                                        start = Offset(
+                                            (center.x + (r - len) * cos(rad)).toFloat(),
+                                            (center.y + (r - len) * sin(rad)).toFloat()
+                                        ),
+                                        end = Offset(
+                                            (center.x + r * cos(rad)).toFloat(),
+                                            (center.y + r * sin(rad)).toFloat()
+                                        ),
+                                        strokeWidth = if (isCard) 1.5.dp.toPx() else 1.dp.toPx(),
+                                        cap = StrokeCap.Round
+                                    )
+                                }
                             }
-                            drawPath(northPath, color = Color(0xFFFF3B30))
 
-                            val southPath = Path().apply {
-                                moveTo(center.x, center.y + needleLength)
-                                lineTo(center.x - needleHalfWidth, center.y)
-                                lineTo(center.x, center.y + 3.dp.toPx())
-                                close()
+                            // Thin guide circle
+                            drawCircle(
+                                color = skin.primaryAccent.copy(alpha = 0.35f),
+                                radius = r - 10.dp.toPx(),
+                                style = Stroke(width = 1.dp.toPx())
+                            )
+
+                            // Dynamic compass needle
+                            rotate(needleAngle, pivot = center) {
+                                val needleW = 4.5.dp.toPx()
+                                val needleL = r - 16.dp.toPx()
+
+                                // North needle (Ruby Red)
+                                val northPath = Path().apply {
+                                    moveTo(center.x, center.y - needleL)
+                                    lineTo(center.x + needleW, center.y)
+                                    lineTo(center.x - needleW, center.y)
+                                    close()
+                                }
+                                drawPath(northPath, color = Color(0xFFFF3B30))
+
+                                // South needle (Silver)
+                                val southPath = Path().apply {
+                                    moveTo(center.x, center.y + needleL)
+                                    lineTo(center.x - needleW, center.y)
+                                    lineTo(center.x + needleW, center.y)
+                                    close()
+                                }
+                                drawPath(southPath, color = Color(0xFFB0BEC5))
                             }
-                            drawPath(southPath, color = skin.textSecondary)
-                        }
 
-                        // Center Pivot Hub
-                        drawCircle(color = skin.appBackground, radius = 9.dp.toPx(), center = center)
-                        drawCircle(color = skin.primaryAccent, radius = 5.dp.toPx(), center = center)
+                            // Center pivot pin
+                            drawCircle(color = Color(0xFF0D131C), radius = 6.dp.toPx(), center = center)
+                            drawCircle(color = skin.primaryAccent, radius = 3.dp.toPx(), center = center)
+                        }
                     }
                 }
 
-                // App Title & Loading Text
+                Spacer(modifier = Modifier.height(22.dp))
+
+                // ── 2. App Name & Title (Like "VR Player" in video) ───────────
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(3.dp),
-                    modifier = Modifier.alpha(textAlpha)
+                    modifier = Modifier.alpha(contentAlpha)
                 ) {
                     Text(
-                        text = "COMPASS PRO",
-                        color = skin.textPrimary,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Black,
+                        text = "Compass Level",
+                        color = Color.White,
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.ExtraBold,
                         fontFamily = FontFamily.Default,
-                        letterSpacing = 1.sp
+                        letterSpacing = 0.5.sp
                     )
 
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // ── 3. Tagline / Welcome Description (Matching reference video) ──
                     Text(
-                        text = "App Loading...",
-                        color = skin.primaryAccent,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.5.sp
+                        text = "Welcome to Compass Level – Precision Dual-Axis Level & 3D Magnetic Compass",
+                        color = Color.White.copy(alpha = 0.72f),
+                        fontSize = 13.5.sp,
+                        lineHeight = 19.sp,
+                        fontWeight = FontWeight.Normal,
+                        textAlign = TextAlign.Center
                     )
                 }
 
-                // Loading Progress Bar
+                Spacer(modifier = Modifier.height(34.dp))
+
+                // ── 4. Sleek Progress Bar & Status (Matching reference video) ──
                 Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(6.dp),
                     modifier = Modifier
-                        .width(220.dp)
-                        .alpha(textAlpha)
+                        .fillMaxWidth(0.85f)
+                        .alpha(contentAlpha),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
+                    // Modern slim track
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(5.dp)
-                            .clip(RoundedCornerShape(3.dp))
-                            .background(skin.cardElevated)
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(Color.White.copy(alpha = 0.12f))
                     ) {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth(fraction = progressAnim)
                                 .fillMaxHeight()
-                                .clip(RoundedCornerShape(3.dp))
+                                .clip(RoundedCornerShape(2.dp))
                                 .background(
                                     Brush.horizontalGradient(
                                         colors = listOf(
@@ -284,37 +331,32 @@ fun ScreenOpeningAnimatedView(
                         )
                     }
 
+                    // Status and percentage
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = if (progressAnim >= 0.98f) "Ready! Starting..." else "Loading Resources...",
-                            color = skin.textSecondary,
-                            fontSize = 10.sp,
+                            text = if (progressAnim >= 0.98f) "Ready! Starting..." else "Loading resources...",
+                            color = Color.White.copy(alpha = 0.55f),
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Medium
                         )
+
                         Text(
                             text = "${(progressAnim * 100).toInt()}%",
-                            color = skin.textPrimary,
-                            fontSize = 10.sp,
+                            color = skin.primaryAccent,
+                            fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
                         )
                     }
                 }
-
-                Text(
-                    text = "Tap anywhere to continue",
-                    color = skin.textSecondary.copy(alpha = 0.45f),
-                    fontSize = 10.sp,
-                    modifier = Modifier.alpha(textAlpha)
-                )
             }
 
-            // ═══════════════════════════════════════════════════════════
-            // ── 3. BOTTOM — REAL GOOGLE ADMOB ADAPTIVE BANNER ──────────
-            // ═══════════════════════════════════════════════════════════
+            // ═════════════════════════════════════════════════════════════
+            // ── BOTTOM ADMOB ADAPTIVE BANNER (Matching reference video) ─
+            // ═════════════════════════════════════════════════════════════
             AdmobAdaptiveBannerView(skin = skin)
         }
     }

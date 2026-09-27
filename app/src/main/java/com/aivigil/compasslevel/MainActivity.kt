@@ -222,8 +222,16 @@ class MainActivity : ComponentActivity() {
                                 hasLocationPermission = hasLocationPermission,
                                 skin = activePalette,
                                 isDarkMode = isDarkMode,
-                                onThemeToggle = { isDarkMode = !isDarkMode },
-                                onSkinsClick = { showSkinsModal = true },
+                                onThemeToggle = {
+                                    adManager.maybeShowInterstitial(this@MainActivity) {
+                                        isDarkMode = !isDarkMode
+                                    }
+                                },
+                                onSkinsClick = {
+                                    adManager.maybeShowInterstitial(this@MainActivity) {
+                                        showSkinsModal = true
+                                    }
+                                },
                                 onRateClick = { showExitDialog = true },
                                 onStartTool = { selectedMode ->
                                     adManager.maybeShowInterstitial(this@MainActivity) {
@@ -251,12 +259,36 @@ class MainActivity : ComponentActivity() {
                                     notesCount = notesList.size,
                                     skin = activePalette,
                                     isDarkMode = isDarkMode,
-                                    onThemeToggle = { isDarkMode = !isDarkMode },
-                                    onNotesClick = { showNotesModal = true },
-                                    onSkinsClick = { showSkinsModal = true },
-                                    onCalibrateClick = { showCalibrationModal = true },
-                                    onSettingsClick = { showSettingsModal = true },
-                                    onHomeClick = { isIntroActive = true }
+                                    onThemeToggle = {
+                                        adManager.maybeShowInterstitial(this@MainActivity) {
+                                            isDarkMode = !isDarkMode
+                                        }
+                                    },
+                                    onNotesClick = {
+                                        adManager.maybeShowInterstitial(this@MainActivity) {
+                                            showNotesModal = true
+                                        }
+                                    },
+                                    onSkinsClick = {
+                                        adManager.maybeShowInterstitial(this@MainActivity) {
+                                            showSkinsModal = true
+                                        }
+                                    },
+                                    onCalibrateClick = {
+                                        adManager.maybeShowInterstitial(this@MainActivity) {
+                                            showCalibrationModal = true
+                                        }
+                                    },
+                                    onSettingsClick = {
+                                        adManager.maybeShowInterstitial(this@MainActivity) {
+                                            showSettingsModal = true
+                                        }
+                                    },
+                                    onHomeClick = {
+                                        adManager.maybeShowInterstitial(this@MainActivity) {
+                                            isIntroActive = true
+                                        }
+                                    }
                                 )
                             },
                             bottomBar = {
@@ -436,7 +468,9 @@ class MainActivity : ComponentActivity() {
                         currentSkin = currentSkin,
                         isDarkMode = isDarkMode,
                         onSkinSelected = { skin ->
-                            currentSkin = skin
+                            adManager.maybeShowInterstitial(this@MainActivity) {
+                                currentSkin = skin
+                            }
                         },
                         onClose = { showSkinsModal = false }
                     )
@@ -449,7 +483,11 @@ class MainActivity : ComponentActivity() {
                         usePercentGrade = sensorState.usePercentGrade,
                         skin = activePalette,
                         isDarkMode = isDarkMode,
-                        onThemeToggle = { isDarkMode = it },
+                        onThemeToggle = { isDark ->
+                            adManager.maybeShowInterstitial(this@MainActivity) {
+                                isDarkMode = isDark
+                            }
+                        },
                         onTrueNorthToggle = { enabled ->
                             sensorManager.setTrueNorth(enabled, sensorState.declination)
                         },
