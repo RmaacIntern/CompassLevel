@@ -1,14 +1,13 @@
 package com.aivigil.compasslevel.ui.ads
 
-import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import com.aivigil.compasslevel.ads.AdCreative
 import com.aivigil.compasslevel.ui.theme.SkinPalette
 import com.google.android.gms.ads.AdListener
 import com.google.android.gms.ads.AdRequest
@@ -17,26 +16,25 @@ import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.LoadAdError
 
 /**
- * AdmobAdaptiveBannerView: Google AdMob Anchored Adaptive Banner integration.
- * Calculates orientation-adaptive width and requests a real AdMob banner using Google's sample ad unit ID.
- * If AdMob has no fill or device is offline, seamlessly displays our high-res simulated fallback creative.
+ * AdmobAdaptiveBannerView: Google AdMob Anchored Adaptive Banner.
+ * Uses Google's official test banner unit ID. Replace with your real AdMob banner unit ID before publishing.
+ * Shows a minimal placeholder background while the ad is loading.
  */
 @Composable
 fun AdmobAdaptiveBannerView(
-    fallbackCreative: AdCreative,
     skin: SkinPalette,
     modifier: Modifier = Modifier,
-    adUnitId: String = "ca-app-pub-3940256099942544/9214589741" // Official Google AdMob Adaptive Banner sample unit
+    adUnitId: String = "ca-app-pub-3940256099942544/9214589741" // Google test banner — replace with real ID
 ) {
     val context = LocalContext.current
-    var isAdMobLoaded by remember { mutableStateOf(false) }
+    var adLoaded by remember { mutableStateOf(false) }
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .background(skin.cardBackground)
+            .background(skin.cardBackground),
+        contentAlignment = Alignment.Center
     ) {
-        // Real Google AdMob Adaptive Banner
         AndroidView(
             modifier = Modifier.fillMaxWidth(),
             factory = { ctx ->
@@ -49,13 +47,10 @@ fun AdmobAdaptiveBannerView(
 
                     adListener = object : AdListener() {
                         override fun onAdLoaded() {
-                            super.onAdLoaded()
-                            isAdMobLoaded = true
+                            adLoaded = true
                         }
-
-                        override fun onAdFailedToLoad(loadAdError: LoadAdError) {
-                            super.onAdFailedToLoad(loadAdError)
-                            isAdMobLoaded = false
+                        override fun onAdFailedToLoad(error: LoadAdError) {
+                            adLoaded = false
                         }
                     }
 
@@ -64,11 +59,13 @@ fun AdmobAdaptiveBannerView(
             }
         )
 
-        // Seamless fallback if AdMob is loading or offline
-        if (!isAdMobLoaded) {
-            BannerAdView(
-                creative = fallbackCreative,
-                skin = skin
+        // Slim placeholder shown while AdMob is loading (avoids layout shift)
+        if (!adLoaded) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
+                    .background(skin.cardBackground)
             )
         }
     }

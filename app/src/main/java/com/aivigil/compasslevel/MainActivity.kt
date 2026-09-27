@@ -29,12 +29,11 @@ import com.aivigil.compasslevel.sensor.CompassSoundManager
 import com.aivigil.compasslevel.sensor.FlashlightManager
 import com.aivigil.compasslevel.ui.*
 import com.aivigil.compasslevel.ui.ads.AdmobAdaptiveBannerView
-import com.aivigil.compasslevel.ui.ads.BannerAdView
-import com.aivigil.compasslevel.ui.ads.InterstitialAdDialog
 import com.aivigil.compasslevel.ui.theme.AppSkin
 import com.aivigil.compasslevel.ui.theme.CompassLevelTheme
 import com.aivigil.compasslevel.ui.theme.PureBlack
 import java.util.Locale
+
 
 class MainActivity : ComponentActivity() {
 
@@ -173,9 +172,7 @@ class MainActivity : ComponentActivity() {
 
                 // Intercept hardware and gesture back navigation:
                 BackHandler(enabled = true) {
-                    if (adManager.isInterstitialVisible) {
-                        adManager.dismissInterstitial()
-                    } else if (showNotesModal || showSkinsModal || showSettingsModal || showCalibrationModal) {
+                    if (showNotesModal || showSkinsModal || showSettingsModal || showCalibrationModal) {
                         showNotesModal = false
                         showSkinsModal = false
                         showSettingsModal = false
@@ -211,7 +208,6 @@ class MainActivity : ComponentActivity() {
                             // ── SCREEN: CINEMATIC ANIMATED LAUNCH SCREEN ────────────────────
                             ScreenOpeningAnimatedView(
                                 skin = activePalette,
-                                adManager = adManager,
                                 onAnimationComplete = {
                                     adManager.showPostSplashInterstitial(this@MainActivity) {
                                         isOpeningSplashActive = false
@@ -240,7 +236,6 @@ class MainActivity : ComponentActivity() {
                                 },
                                 adSlot = {
                                     AdmobAdaptiveBannerView(
-                                        fallbackCreative = adManager.currentBannerCreative,
                                         skin = activePalette
                                     )
                                 }
@@ -268,7 +263,6 @@ class MainActivity : ComponentActivity() {
                                 Column {
                                     // Persistent Bottom Adaptive Banner Ad right above Navigation Bar
                                     AdmobAdaptiveBannerView(
-                                        fallbackCreative = adManager.currentBannerCreative,
                                         skin = activePalette
                                     )
                                     GoogleNavigationBar(
@@ -496,16 +490,6 @@ class MainActivity : ComponentActivity() {
                     )
                 }
 
-                // ── FULL-SCREEN INTERSTITIAL AD SIMULATION ───────────────────
-                if (adManager.isInterstitialVisible) {
-                    InterstitialAdDialog(
-                        creative = adManager.currentInterstitialCreative,
-                        skin = activePalette,
-                        onDismiss = {
-                            adManager.dismissInterstitial()
-                        }
-                    )
-                }
             }
         }
     }
