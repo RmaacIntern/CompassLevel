@@ -78,13 +78,23 @@ adb install -r .\app\build\outputs\apk\debug\app-debug.apk
 
 ## Documentation Index
 
-- **[`POST-MORTEM.md`](POST-MORTEM.md):** Complete master post-mortem & engineering audit (Phases 1-4).
+- **[`COVERING-NOTE.md`](COVERING-NOTE.md):** Executive covering note & sprint summary in engineering register.
+- **[`REMEDIATION-CHECKLIST-RIZWAN.md`](REMEDIATION-CHECKLIST-RIZWAN.md):** Two-day remediation self-check table (Gaps R1–R15).
+- **[`ROADBLOCKS-AND-MATH-FIXES.md`](ROADBLOCKS-AND-MATH-FIXES.md):** Mathematical derivations & telemetry for sensor singularities and frame drops.
+- **[`POST-MORTEM.md`](POST-MORTEM.md):** Complete master post-mortem & engineering audit with explicit unfinished items.
 - **[`COMPETITOR-RESEARCH.md`](COMPETITOR-RESEARCH.md):** Comprehensive UI & feature benchmark across 4 market competitor apps.
-- **[`SPEC.md`](SPEC.md):** Gate 1 feature boundaries & out-of-scope declarations.
+- **[`SPEC.md`](SPEC.md):** Gate 1 technical specification with 6 required architectural tables.
 - **[`DESIGN.md`](DESIGN.md):** Gate 1B UI states & visual hierarchy specification.
 - **[`ARCHITECTURE.md`](ARCHITECTURE.md):** Gate 2 technical decisions, data flows, and known weaknesses.
 - **[`APPROVAL.md`](APPROVAL.md):** Product Lead (Shezrah Abbasi) design sign-off records.
-- **[`QA-REPORT.md`](QA-REPORT.md):** Gate 10 dual physical device verification report (Vivo Y27s & Samsung Galaxy A06).
+- **[`QA-REPORT.md`](QA-REPORT.md):** Gate 10 dual physical device verification report & sceptic audit.
 - **[`DAY-0.md`](DAY-0.md):** Day 0 toolchain setup & audit checklist.
 - **[`DAY-1.md`](DAY-1.md):** Day 1 specification, design, and architecture audit log.
-- **[`SESSION-LOG-2026-09-22.md`](SESSION-LOG-2026-09-22.md):** Daily session log with `# What I got wrong`.
+- **Session Logs:**
+  - [`SESSION-LOG-2026-09-22.md`](SESSION-LOG-2026-09-22.md) — Settings, Heading-Hold buffer, Gate 1B.
+  - [`SESSION-LOG-2026-09-23.md`](SESSION-LOG-2026-09-23.md) — Sensor singularity fixes, fluid physics, launcher icon.
+  - [`SESSION-LOG-2026-09-24.md`](SESSION-LOG-2026-09-24.md) — Introductory screen, monetization slot, exit prompt, APK analysis.
+  - [`SESSION-LOG-2026-09-25.md`](SESSION-LOG-2026-09-25.md) — AdMob SDK integration, WorkManager ProGuard resolution, splash screen.
+  - [`SESSION-LOG-2026-09-27.md`](SESSION-LOG-2026-09-27.md) — AdMob standardization, video-matched splash redesign, 20s interstitials.
+  - [`SESSION-LOG-2026-09-28.md`](SESSION-LOG-2026-09-28.md) — Documentation remediation pass & metric reconciliation.
+  - [`SESSION-LOG-2026-09-29.md`](SESSION-LOG-2026-09-29.md) — Day 1 remediation audit & active gate checklist.
