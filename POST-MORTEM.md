@@ -202,3 +202,40 @@ A detailed benchmark was conducted against the top 4 Play Store compass and leve
   - **Samsung Galaxy A06 (`SM-A065F`)**: 6.7" HD+ 60Hz (720x1600, 262 ppi), MediaTek Helio G85, sensor fusion fallback.
 - **Repository Cleanliness:** 46 tracked files, working tree clean, zero uncommitted changes.
 - **Dual-Remote Alignment:** Up-to-date with `origin/main` (`RmaacIntern/CompassLevel`) and `personal/main` (`riz5y/CompassLevel`).
+
+---
+
+## What is Unfinished (§8 Document Standard Requirement)
+
+The following items represent the complete, unvarnished list of everything that is currently unfinished or pending in the CompassLevel project:
+
+1. **Google Play Console Production Release Setup:**
+   - Production track application entity has not been created in Play Console.
+   - Release signing keystore (`keystore.jks`) has not been generated or provisioned into CI/CD secrets.
+   - Store listing metadata (short description, 4000-character long description, privacy policy URL, feature graphic 1024x500, screenshots across 7" and 10" form factors) has not been authored or uploaded.
+2. **AdMob Production Monetization IDs:**
+   - The app runs on Google's official sample/test unit IDs (`ca-app-pub-3940256099942544/...`).
+   - Production AdMob App ID and live ad unit IDs (Anchored Adaptive Banner and Full-Screen Interstitial) have not been issued by account leadership.
+3. **Automated Offline Declination (WMM Engine):**
+   - Declination currently requires manual user input in Settings ($\pm 1^\circ$ steps).
+   - An offline World Magnetic Model (WMM 2025–2030) spherical harmonic coefficient evaluator has not been embedded to calculate local magnetic declination without network access.
+4. **Automated Instrument Unit Test Suite:**
+   - Vector projection math in `CompassSensorManager` and horizon alignment math in `ScreenClinometerView` are verified manually on physical devices and emulators, but lack automated JUnit4/Robolectric test cases for regression catching on sensor matrix edge cases.
+5. **Persistent Measurement History Database:**
+   - Measurement notes are stored in memory and flushed to a local JSON cache; an indexed Room SQLite database with full CRUD, export to CSV/GeoJSON, and search filtering is not yet implemented.
+6. **Multi-Version Physical Hardware QA:**
+   - Physical QA was conducted on two devices that both run Android 14. Testing across Android 10, 11, and 12 has only been simulated via emulators; physical hardware verification across legacy Android versions remains incomplete.
+
+---
+
+## What I Would Do Next, in Priority Order (§8 Document Standard Requirement)
+
+| Priority | Task | Why (Architectural Rationale) | Effort |
+|---|---|---|---|
+| **1** | **Inject Production AdMob Unit IDs** | The monetization plumbing is 100% complete and verified with 20s cooldown and failover. Swapping the 3 string constants in `AndroidManifest.xml`, `AdManager.kt`, and `AdmobAdaptiveBannerView.kt` turns on live commercial revenue with zero code refactoring. | 15 mins |
+| **2** | **Generate Production Keystore & Configure Play Signing** | Mandatory blocker for Gate 12 / Play Store upload. Needs `keytool -genkeypair -v -keystore release.jks` and Gradle signing config blocks before binary upload. | 1 hour |
+| **3** | **Author Automated Matrix Math JUnit Tests** | Prevents regression on Euler gimbal-lock fixes, Euclidean circular clamping, and camera line-of-sight elevation. Ensures future refactors cannot re-introduce the 359°–0° spin or -90° horizon bias. | 3 hours |
+| **4** | **Embed Offline WMM Declination Lookup** | Calculates True North automatically from rough GPS coordinates or coarse region lookup tables without pinging external APIs, preserving our zero-permission offline privacy positioning while eliminating manual user declination entry. | 4 hours |
+| **5** | **Migrate Measurement Notes to Room DB with CSV Export** | Replaces transient JSON file storage with an ACID-compliant SQLite schema, enabling tradespeople and field engineers to export survey-grade records to external spreadsheet applications. | 6 hours |
+| **6** | **Physical Hardware QA on Android 11 / 12 Devices** | Validates edge-to-edge window insets, status bar icon contrast, and sensor listener lifecycle on OEM skins (MIUI, ColorOS) running pre-Android 14 versions to eliminate remaining ecosystem risk. | 4 hours |
+

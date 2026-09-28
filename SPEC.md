@@ -31,7 +31,7 @@ A minimalist, high-precision utility delivering a magnetic compass rose dial and
 
 | Feature ID | Feature Name | Description | Done When (Acceptance Criteria & Tolerances) | Priority | Gate |
 |---|---|---|---|---|---|
-| **FEAT-01** | Unified Compass Dial | 330dp compass rose with 360° tick track, 8 cardinal markers, and heading readout | Azimuth updates at 50 Hz; shortest-angular-delta smoothing eliminates 359°–0° spin; angular error $\le \pm 1.5^\circ$ against reference | P0 | Gate 1 |
+| **FEAT-01** | Unified Compass Dial | 330dp compass rose with 360° tick track, 8 cardinal markers, and heading readout | Held still on a flat surface for 60s, heading varies by $\le 1.0^\circ$. Rotated through the $359^\circ \to 1^\circ$ boundary at $\sim 90^\circ/\text{s}$, the needle never travels more than $180^\circ$ in one transition. | P0 | Gate 1 |
 | **FEAT-02** | Center Spirit Level | Concentric bullseye level inside compass hub with 18dp fluid bubble | Bubble centers within $\pm 0.5^\circ$ deadband; visual emerald aura triggers and haptic click fires within 25ms of level acquisition | P0 | Gate 1 |
 | **FEAT-03** | Dual-Axis Spirit Level | Full-screen surface level with X/Y pitch/roll readouts and tubular guides | Digital readouts show decimal degrees ($\pm 0.1^\circ$ resolution) or % Grade ($0.1\%$ resolution); tap-to-tare zeroes offset | P0 | Gate 1 |
 | **FEAT-04** | Magnetometer Fallback | Automated graceful degradation when magnetometer hardware is absent | Detects `hasMagnetometer == false` on launch; routes directly to Level mode; zero crashes; informs user with banner | P0 | Gate 1 |

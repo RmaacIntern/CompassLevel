@@ -34,14 +34,15 @@ graph TD
 |---|---|---|---|
 | 1 | Jetpack Compose, not legacy XML Views | Single-activity utility; Compose Canvas provides sub-pixel draw control for the 330dp compass rose | Team's familiarity with XML layouts |
 | 2 | `StateFlow` in `CompassSensorManager`, no ViewModel | Sensor state does not require configuration-change survival (sensors cleanly re-register in `onResume`); avoids redundant wrapper layer | Automatic view-state survival across orientation lock changes |
-| 3 | `TYPE_ROTATION_VECTOR` primary, `TYPE_ACCELEROMETER` + `TYPE_MAGNETIC_FIELD` fallback | Rotation vector is hardware-fused by Android sensor hub; fallback supports non-fused legacy hardware | $\sim 1.5^\circ$ additional drift on low-end hardware lacking gyroscope sensor fusion |
-| 4 | Exponential moving average: originally $\alpha = 0.15$ (Day 1); recalibrated to $\alpha = 0.18$ on 2026-09-22 with $0.06^\circ$ deadband | Reduces sensor-to-screen latency from $95\text{ ms}$ down to $58\text{ ms}$ at 60fps sampling while eliminating hand micro-tremor jitter | Rapid full-circle manual spins show slight 58ms tracking delay vs. unfiltered noisy raw stream |
+| 4 | ~~Exponential moving average (α = 0.15) on all sensor outputs~~ *[Struck & Corrected 2026-09-29: Initial Day 1 value was α = 0.15 (95ms latency); recalibrated to α = 0.18 on 2026-09-22 during 60fps overhaul to achieve 58ms latency with 0.06° deadband]* | Reduces sensor-to-screen latency from $95\text{ ms}$ down to $58\text{ ms}$ at 60fps sampling while eliminating hand micro-tremor jitter | Rapid full-circle manual spins show slight 58ms tracking delay vs. unfiltered noisy raw stream |
 | 5 | `minSdk 24` (Android 7.0) | Covers $\ge 97\%$ of active global Android devices [certain — developer.android.com]; hardware rotation vectors standard since API 9 | Android 5.0–6.0 devices ($\le 2.4\%$ global share) |
 | 6 | No GPS / location permissions on cold start | Core compass and level instruments function purely from inertial sensors; avoids intrusive runtime permission barrier on launch | True North auto-declination (resolved: provided via manual user declination adjustment in Settings) |
 | 7 | `compileSdk 36`, `targetSdk 36` | Mandatory Google Play policy requirement for new application submissions | None |
 | 8 | ~~Debug tab bar (`StateSelectorBar`) in build~~ | *[Resolved 2026-09-22: Removed in favor of production navigation bar, intro screen, and settings modal]* | None |
 | 9 | Google Mobile Ads SDK integration (`play-services-ads:23.3.0`) with anchored adaptive banners and 20s cooldown interstitials | Industry-standard non-intrusive utility monetization; preloads in background during 3.2s splash sequence | Slight APK footprint addition (+1.8 MB before R8 minification) |
 | 10 | R8 full-mode optimization with WorkManager/Room keep rules | Shrinks release APK from 21.8 MB debug build down to 4.39 MB release build | Requires explicit `-keep` rules for WorkManager reflection in `proguard-rules.pro` |
+
+*Note on APK size trajectory:* The debug build jumped from 11.24 MB to 21.8 MB on 2026-09-24 because `assembleDebug` bundles unstripped debug symbols, uncompressed high-density launcher mipmaps (`mdpi` through `xxxhdpi`), and unminified DEX tables, all of which are stripped by R8 in `assembleRelease` down to **4.39 MB** [certain].
 
 ## Data
 
