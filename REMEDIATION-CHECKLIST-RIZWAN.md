@@ -34,5 +34,5 @@
 ## Handback Artifact Reference
 
 - **Organization Repository:** `https://github.com/RmaacIntern/CompassLevel.git`
-- **Handback Commit SHA:** `3285b5e` (and `HEAD` on `main`)
+- **Handback Commit SHA:** `71c706b` (and `HEAD` on `main`)
 - **Production Binary Artifact:** `C:\Users\RIZWANPC\Desktop\CompassLevel-v1.0.apk` (**4.39 MB** release build)
