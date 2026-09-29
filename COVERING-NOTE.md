@@ -49,3 +49,13 @@
 5. Re-read `QA-REPORT.md` as a sceptic, adding 5 stress test cases and documenting 3 resolved defects.
 6. Added explicit "What is Unfinished" (6 items) and "What I Would Do Next" (6 items with architectural reasons) to `POST-MORTEM.md`.
 7. Completed all 15 items in [`REMEDIATION-CHECKLIST-RIZWAN.md`](REMEDIATION-CHECKLIST-RIZWAN.md).
+
+---
+
+### 5. Personal Fork Explanation (For Sir Muneeb)
+
+1. The personal fork at `https://github.com/riz5y/CompassLevel.git` was established on Day 0 per the initial dual-remote setup instruction to maintain a secondary developer backup mirror (`personal`) alongside the organization upstream (`origin`).
+2. Both remotes have been pushed and synchronized at every commit across the entire project; zero commits or code changes exist in the personal fork that are not in the organization repo.
+3. The canonical submission repository is exclusively the organization repo: `https://github.com/RmaacIntern/CompassLevel.git`.
+4. If organizational policy prefers a single repository, the personal fork can be deleted or archived immediately upon leadership ruling; no code or history will be lost.
+
