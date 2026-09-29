@@ -2,7 +2,7 @@
 title: "CompassLevel — 2026-09-29 Session Log: Day 1 Remediation — Log Backfilling, SPEC.md Six-Table Rebuild & Quantitative Criteria"
 app: com.aivigil.compasslevel
 date: 2026-09-29
-tip: 0fe7177
+tip: 5d0f2f5
 lead: Shezrah Abbasi
 developer: Rizwan
 status: "Day 1 remediation completed: 09-23 and 09-24 logs backfilled via dated amendments; SPEC.md rebuilt to standard's 6 shapes with quantitative tolerances; acceptance checkboxes un-ticked to restore gating function."
@@ -17,7 +17,7 @@ type: session log
 | Technical Specification (`SPEC.md`) | Rebuilt with standard's 6 shapes: What it does, Who it is for, Features table with quantitative **Done when** column, NOT building (week-by-week ratchet), Monetization, Out of scope permanently, Open questions [certain] |
 | Gate Functionality | Replaced uniform pre-ticked checkboxes in `SPEC.md` with active milestone statuses; un-ticked unverified future gates [certain] |
 | Release APK | `CompassLevel-v1.0.apk` (**4.39 MB** release build), verified and on Desktop (`C:\Users\RIZWANPC\Desktop\CompassLevel-v1.0.apk`) [certain] |
-| Git Remotes | Synchronized to `origin/main` and `personal/main` at commit `0fe7177` [certain] |
+| Git Remotes | Synchronized to `origin/main` and `personal/main` at commit `5d0f2f5` [certain] |
 
 ---
 

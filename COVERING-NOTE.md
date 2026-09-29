@@ -11,7 +11,7 @@
 
 ### 1. Delivery & Repository Status
 
-1. The repository sits at commit `171de86` across 64 commits on `main`.
+1. The repository sits at commit `5d0f2f5` across 66 commits on `main`.
 2. The production release APK compiles in 12 seconds via `./gradlew assembleRelease --no-daemon` and measures **4.39 MB** on disk, which is 15.61 MB below the 20.0 MB program ceiling.
 3. The release binary runs on Android 7.0+ (API 24+) through Android 16 (SDK 36) without runtime permission prompts.
 4. Physical hardware verification covers two devices on Android 14 (Vivo Y27s, Snapdragon 680, 1080x2388 90Hz, and Samsung Galaxy A06, Helio G85, 720x1600 60Hz) plus an Android 13 (API 33) virtual profile across 20 test cases.
