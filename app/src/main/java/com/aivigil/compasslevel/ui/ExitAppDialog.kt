@@ -18,8 +18,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.automirrored.outlined.ExitToApp
 import androidx.compose.material.icons.outlined.Close
-import androidx.compose.material.icons.outlined.ExitToApp
 import androidx.compose.material.icons.outlined.RateReview
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.*
@@ -285,7 +285,7 @@ fun ExitAppDialog(
                         border = androidx.compose.foundation.BorderStroke(1.dp, RedAccent.copy(alpha = 0.5f))
                     ) {
                         Icon(
-                            imageVector = Icons.Outlined.ExitToApp,
+                            imageVector = Icons.AutoMirrored.Outlined.ExitToApp,
                             contentDescription = null,
                             tint = RedAccent,
                             modifier = Modifier.size(18.dp)
